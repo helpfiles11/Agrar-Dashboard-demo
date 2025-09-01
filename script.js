@@ -1,4 +1,3 @@
-// script.js
 async function fetchWeatherData(city) {
   try {
     const response = await fetch(`/.netlify/functions/weather?city=${city}`);
@@ -19,15 +18,15 @@ async function displayWeather(city) {
 
   if (weatherData) {
     weatherElement.innerHTML = `
-      <p>Temperatur: ${weatherData.current.temp_c}°C</p>
-      <p>Luftfeuchtigkeit: ${weatherData.current.humidity}%</p>
-      <p>Niederschlag: ${weatherData.current.precip_mm} mm</p>
+      <p><strong>Temperatur:</strong> ${weatherData.current.temp_c}°C</p>
+      <p><strong>Luftfeuchtigkeit:</strong> ${weatherData.current.humidity}%</p>
+      <p><strong>Niederschlag:</strong> ${weatherData.current.precip_mm} mm</p>
+      <p><strong>Bedingungen:</strong> ${weatherData.current.condition.text}</p>
     `;
   } else {
     weatherElement.innerHTML = 'Wetterdaten konnten nicht geladen werden.';
   }
 }
 
-// Beispielaufruf
+// Beispielaufruf für Berlin
 displayWeather('Berlin');
-
