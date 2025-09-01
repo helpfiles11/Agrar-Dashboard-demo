@@ -19,7 +19,7 @@ async function fetchWeatherData(city) {
   }
 }
 
-async function displayWeather(city) {
+/* async function displayWeather(city) {
   const weatherData = await fetchWeatherData(city);
   const weatherElement = document.getElementById('weather-data');
 
@@ -33,7 +33,7 @@ async function displayWeather(city) {
   } else {
     weatherElement.innerHTML = 'Wetterdaten konnten nicht geladen werden.';
   }
-}
+} */
 
 // Beispielaufruf für Berlin
 displayWeather('Berlin');
