@@ -1,9 +1,11 @@
 {
-  "name": "Agrardashboard",
+  "name": "agrardashboard",
   "version": "1.0.0",
   "description": "Eine Wetter-App für Bauern",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
