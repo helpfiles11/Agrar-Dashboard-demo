@@ -12,7 +12,7 @@ async function fetchWeatherData(city) {
     document.getElementById('wind-speed').textContent = data.current.wind_kph;
     document.getElementById('humidity').textContent = data.current.humidity;
     document.getElementById('precipitation').textContent = data.current.precip_mm;
-    document.getElementById('weather-icon').src = data.current.condition.icon;
+    document.getElementById('weather-icon').src = `https:${data.current.condition.icon}`;
   } catch (error) {
     console.error('Fehler beim Abrufen der Wetterdaten:', error);
     return null;
