@@ -5,7 +5,14 @@ async function fetchWeatherData(city) {
       throw new Error(`Fehler: ${response.status}`);
     }
     const data = await response.json();
-    return data;
+    // Daten in die HTML-Elemente einfügen
+    document.getElementById('location-name').textContent = data.location.name;
+    document.getElementById('temperature').textContent = data.current.temp_c;
+    document.getElementById('weather-condition').textContent = data.current.condition.text;
+    document.getElementById('wind-speed').textContent = data.current.wind_kph;
+    document.getElementById('humidity').textContent = data.current.humidity;
+    document.getElementById('precipitation').textContent = data.current.precip_mm;
+    document.getElementById('weather-icon').src = data.current.condition.icon;
   } catch (error) {
     console.error('Fehler beim Abrufen der Wetterdaten:', error);
     return null;
@@ -30,3 +37,6 @@ async function displayWeather(city) {
 
 // Beispielaufruf für Berlin
 displayWeather('Berlin');
+
+// Wetterdaten beim Laden der Seite abrufen
+window.onload = fetchWeatherData;
