@@ -2,7 +2,16 @@
 async function fetchWeatherData() {
   const loadingElement = document.getElementById("loading");
   const weatherElement = document.getElementById("weather-data");
-
+  const filteredData = {
+    location: data.location.name,
+    current: {
+      temp_c: data.current.temp_c,
+      humidity: data.current.humidity,
+      wind_kph: data.current.wind_kph,
+      condition: data.current.condition,
+      precip_mm: data.current.precip_mm,
+    },};
+    localStorage.setItem("weatherData", JSON.stringify(filteredData));
   loadingElement.textContent = "Lade Wetterdaten...";
 
   try {
