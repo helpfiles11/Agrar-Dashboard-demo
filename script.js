@@ -1,42 +1,35 @@
-async function fetchWeatherData(city) {
+// script.js
+async function fetchWeatherData() {
+  const loadingElement = document.getElementById("loading");
+  const weatherElement = document.getElementById("weather-data");
+
+  loadingElement.textContent = "Lade Wetterdaten...";
+
   try {
-    const response = await fetch(`/.netlify/functions/weather?city=${city}`);
+    const response = await fetch("https://agrardashboard.netlify.app/.netlify/functions/weather");
     if (!response.ok) {
-      throw new Error(`Fehler: ${response.status}`);
+      throw new Error(`Netlify-Funktion antwortete mit Fehler: ${response.status}`);
     }
     const data = await response.json();
-    // Daten in die HTML-Elemente einfügen
-    document.getElementById('location-name').textContent = data.location.name;
-    document.getElementById('temperature').textContent = data.current.temp_c;
-    document.getElementById('weather-condition').textContent = data.current.condition.text;
-    document.getElementById('wind-speed').textContent = data.current.wind_kph;
-    document.getElementById('humidity').textContent = data.current.humidity;
-    document.getElementById('precipitation').textContent = data.current.precip_mm;
-    document.getElementById('weather-icon').src = `https:${data.current.condition.icon}`;
+
+    // Daten ins DOM schreiben
+    document.getElementById("temperature").textContent = data.current.temp_c + " °C";
+    document.getElementById("humidity").textContent = data.current.humidity + " %";
+    document.getElementById("wind").textContent = data.current.wind_kph + " km/h";
+    document.getElementById("condition").textContent = data.current.condition.text;
+    document.getElementById("precipitation").textContent = data.current.precip_mm + " mm";
+
+    // Wettericon anzeigen
+    const iconUrl = `https:${data.current.condition.icon}`;
+    document.getElementById("weather-icon").src = iconUrl;
+
+    loadingElement.textContent = "";
   } catch (error) {
-    console.error('Fehler beim Abrufen der Wetterdaten:', error);
-    return null;
+    loadingElement.textContent = "";
+    weatherElement.innerHTML = `<p class="error">Fehler beim Laden der Wetterdaten: ${error.message}</p>`;
+    console.error("API-Fehler:", error);
   }
 }
 
-/* async function displayWeather(city) {
-  const weatherData = await fetchWeatherData(city);
-  const weatherElement = document.getElementById('weather-data');
-
-  if (weatherData) {
-    weatherElement.innerHTML = `
-      <p><strong>Temperatur:</strong> ${weatherData.current.temp_c}°C</p>
-      <p><strong>Luftfeuchtigkeit:</strong> ${weatherData.current.humidity}%</p>
-      <p><strong>Niederschlag:</strong> ${weatherData.current.precip_mm} mm</p>
-      <p><strong>Bedingungen:</strong> ${weatherData.current.condition.text}</p>
-    `;
-  } else {
-    weatherElement.innerHTML = 'Wetterdaten konnten nicht geladen werden.';
-  }
-} */
-
-// Beispielaufruf für Berlin
-displayWeather('Berlin');
-
-// Wetterdaten beim Laden der Seite abrufen
-window.onload = fetchWeatherData;
+// Funktion beim Laden der Seite aufrufen
+document.addEventListener("DOMContentLoaded", fetchWeatherData);
