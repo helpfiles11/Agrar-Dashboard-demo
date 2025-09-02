@@ -1,6 +1,6 @@
-// script.js - Agrar-Dashboard JavaScript (Fehlerfreie Version)
+// script.js - Agrar-Dashboard JavaScript (Vollständige Version)
 
-// Produktdatenbank basierend auf der Tabelle "Optimaler Erntezeitpunkt.txt"
+// Produktdatenbank
 const CROPS_DATABASE = {
     weizen: {
         name: 'Weizen',
@@ -8,7 +8,7 @@ const CROPS_DATABASE = {
         optimalHumidity: { max: 60 },
         optimalTemp: { min: 22, max: 26 },
         optimalPrecip: { max: 5 },
-        comment: 'Unter 18% Kornfeuchte, sonst Gefahr von Lager- und Qualitätsverlusten'
+        comment: 'Unter 18% Kornfeuchte, sonst Qualitätsverluste'
     },
     mais: {
         name: 'Mais',
@@ -56,12 +56,12 @@ const CROPS_DATABASE = {
         optimalHumidity: { max: 15 },
         optimalTemp: { min: 22, max: 28 },
         optimalPrecip: { max: 2 },
-        comment: 'Ölqualität sinkt bei zu hoher Kornfeuchte'
+        comment: 'Ölqualität sinkt bei zu hoger Kornfeuchte'
     }
 };
 
 /**
- * WeatherManager Class
+ * WeatherManager Class - Hauptklasse für Wetterdaten-Verwaltung
  */
 class WeatherManager {
     constructor() {
@@ -75,6 +75,9 @@ class WeatherManager {
         this.init();
     }
 
+    /**
+     * Initialisierung
+     */
     async init() {
         try {
             console.log('Initialisiere Agrar-Dashboard...');
@@ -84,11 +87,15 @@ class WeatherManager {
             console.log('Dashboard erfolgreich initialisiert');
         } catch (error) {
             console.error('Fehler bei der Initialisierung:', error);
-            this.showError('Fehler beim Initialisieren der Anwendung');
+            this.showError('Fehler beim Initialisieren: ' + error.message);
         }
     }
 
+    /**
+     * Event Listeners einrichten
+     */
     setupEventListeners() {
+        // Location Input
         const locationInput = document.getElementById('location-input');
         if (locationInput) {
             locationInput.addEventListener('keypress', (e) => {
@@ -98,6 +105,7 @@ class WeatherManager {
             });
         }
 
+        // Product Select
         const productSelect = document.getElementById('product-select');
         if (productSelect) {
             productSelect.addEventListener('change', () => {
@@ -107,11 +115,14 @@ class WeatherManager {
 
         // Auto-Refresh alle 10 Minuten
         setInterval(() => {
-            console.log('Auto-refresh: Lade neue Wetterdaten...');
+            console.log('Auto-refresh der Wetterdaten...');
             this.loadWeatherData();
         }, 600000);
     }
 
+    /**
+     * Produktauswahl aktualisieren
+     */
     updateProductSelection() {
         const select = document.getElementById('product-select');
         if (!select) return;
@@ -124,21 +135,24 @@ class WeatherManager {
             this.selectedProducts = [selectedValue];
         }
         
-        console.log('Produktauswahl aktualisiert:', this.selectedProducts);
+        console.log('Produktauswahl:', this.selectedProducts);
         
         if (this.weatherData) {
             this.generateProductCards();
         }
     }
 
+    /**
+     * Wetterdaten von API laden
+     */
     async loadWeatherData() {
         try {
-            console.log(`Lade Wetterdaten für: ${this.currentLocation}`);
+            console.log('Lade Wetterdaten für:', this.currentLocation);
             
             // Cache prüfen
             const cachedData = this.getCachedWeatherData();
             if (cachedData) {
-                console.log('Verwende gecachte Wetterdaten');
+                console.log('Verwende gecachte Daten');
                 this.weatherData = cachedData;
                 this.updateWeatherUI(cachedData);
                 this.generateProductCards();
@@ -159,35 +173,26 @@ class WeatherManager {
             }
             
             if (!data.current || !data.location) {
-                throw new Error('Unvollständige Wetterdaten erhalten');
+                throw new Error('Unvollständige Wetterdaten');
             }
             
-            console.log('Wetterdaten erfolgreich geladen:', data.location.name);
+            console.log('Wetterdaten geladen für:', data.location.name);
             
+            // Daten speichern und UI aktualisieren
             this.weatherData = data;
             this.cacheWeatherData(data);
             this.updateWeatherUI(data);
             this.generateProductCards();
             
-            localStorage.setItem('last_weather_update', Date.now().toString());
-            
         } catch (error) {
             console.error('Fehler beim Laden der Wetterdaten:', error);
-            
-            let errorMessage = 'Fehler beim Laden der Wetterdaten.';
-            
-            if (error.message.includes('Stadt')) {
-                errorMessage = `Die Stadt "${this.currentLocation}" wurde nicht gefunden.`;
-            } else if (error.message.includes('API-Key') || error.message.includes('401')) {
-                errorMessage = 'API-Schlüssel ungültig. Bitte kontaktieren Sie den Administrator.';
-            } else if (error.message.includes('Network') || error.name === 'TypeError') {
-                errorMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
-            }
-            
-            this.showError(errorMessage);
+            this.showError('Wetterdaten konnten nicht geladen werden: ' + error.message);
         }
     }
 
+    /**
+     * Weather UI aktualisieren
+     */
     updateWeatherUI(data) {
         try {
             // Heute
@@ -204,24 +209,27 @@ class WeatherManager {
             // Icon für heute
             const todayIcon = document.getElementById('today-icon');
             if (todayIcon && data.current.condition.icon) {
-                todayIcon.src = this.getIconUrl(data.current.condition.icon);
+                todayIcon.src = `https:${data.current.condition.icon}`;
                 todayIcon.alt = data.current.condition.text;
             }
 
-            // Forecast-Daten verarbeiten
+            // Morgen
             if (data.forecast && data.forecast.forecastday && data.forecast.forecastday.length > 1) {
                 this.updateTomorrowWeather(data.forecast.forecastday[1]);
                 this.updateForecast(data.forecast.forecastday);
             } else {
-                this.updateTomorrowWeatherFallback(data.current);
+                this.updateTomorrowFallback(data.current);
                 this.createMockForecast();
             }
             
         } catch (error) {
-            console.error('Fehler beim Aktualisieren der Weather UI:', error);
+            console.error('Fehler beim UI Update:', error);
         }
     }
 
+    /**
+     * Morgen-Wetter aktualisieren
+     */
     updateTomorrowWeather(tomorrowData) {
         this.hideElement('tomorrow-loading');
         this.showElement('tomorrow-content');
@@ -238,12 +246,15 @@ class WeatherManager {
         
         const tomorrowIcon = document.getElementById('tomorrow-icon');
         if (tomorrowIcon && tomorrowData.day.condition.icon) {
-            tomorrowIcon.src = this.getIconUrl(tomorrowData.day.condition.icon);
+            tomorrowIcon.src = `https:${tomorrowData.day.condition.icon}`;
             tomorrowIcon.alt = tomorrowData.day.condition.text;
         }
     }
 
-    updateTomorrowWeatherFallback(currentData) {
+    /**
+     * Fallback für morgen ohne Forecast-Daten
+     */
+    updateTomorrowFallback(currentData) {
         this.hideElement('tomorrow-loading');
         this.showElement('tomorrow-content');
         
@@ -254,15 +265,18 @@ class WeatherManager {
         this.updateElement('tomorrow-minmax', `${Math.round(estimatedTemp + 3)}°C / ${Math.round(estimatedTemp - 2)}°C`);
         this.updateElement('tomorrow-rain-chance', '20%');
         this.updateElement('tomorrow-precipitation', '0 mm');
-        this.updateElement('tomorrow-humidity', `${currentData.humidity + 5}%`);
+        this.updateElement('tomorrow-humidity', `${Math.min(100, currentData.humidity + 5)}%`);
         
         const tomorrowIcon = document.getElementById('tomorrow-icon');
         if (tomorrowIcon) {
-            tomorrowIcon.src = this.getIconUrl(currentData.condition.icon);
+            tomorrowIcon.src = `https:${currentData.condition.icon}`;
             tomorrowIcon.alt = 'Ähnlich wie heute';
         }
     }
 
+    /**
+     * 7-Tage Forecast aktualisieren
+     */
     updateForecast(forecastDays) {
         this.hideElement('forecast-loading');
         this.showElement('forecast-content');
@@ -284,7 +298,7 @@ class WeatherManager {
             dayElement.className = 'forecast-day';
             dayElement.innerHTML = `
                 <div class="forecast-date">${dayName}<br>${dayDate}</div>
-                <img src="${this.getIconUrl(day.day.condition.icon)}" 
+                <img src="https:${day.day.condition.icon}" 
                      alt="${day.day.condition.text}" 
                      width="40" 
                      height="40">
@@ -298,6 +312,9 @@ class WeatherManager {
         });
     }
 
+    /**
+     * Mock-Forecast erstellen falls keine API-Daten
+     */
     createMockForecast() {
         this.hideElement('forecast-loading');
         this.showElement('forecast-content');
@@ -316,18 +333,17 @@ class WeatherManager {
             const dayName = days[date.getDay()];
             const dayDate = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
             
-            // Mock-Daten basierend auf aktuellen Werten
             const baseTemp = this.weatherData ? this.weatherData.current.temp_c : 20;
-            const tempVariation = Math.random() * 6 - 3; // ±3°C
-            const maxTemp = Math.round(baseTemp + tempVariation + 3);
-            const minTemp = Math.round(baseTemp + tempVariation - 3);
+            const tempVar = Math.random() * 6 - 3;
+            const maxTemp = Math.round(baseTemp + tempVar + 3);
+            const minTemp = Math.round(baseTemp + tempVar - 3);
             const rainChance = Math.round(Math.random() * 60);
             
             const dayElement = document.createElement('div');
             dayElement.className = 'forecast-day';
             dayElement.innerHTML = `
                 <div class="forecast-date">${dayName}<br>${dayDate}</div>
-                <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto;">
                     ${rainChance > 40 ? '🌧️' : (rainChance > 20 ? '⛅' : '☀️')}
                 </div>
                 <div class="forecast-temps">
@@ -340,6 +356,9 @@ class WeatherManager {
         }
     }
 
+    /**
+     * Produktkarten generieren
+     */
     generateProductCards() {
         const container = document.getElementById('products-grid');
         if (!container) return;
@@ -369,12 +388,10 @@ class WeatherManager {
                             ${status.text}
                         </div>
                         <p><strong>Optimale Bedingungen:</strong></p>
-                        <p>Luftfeuchtigkeit: ≤ ${crop.optimalHumidity.max}% | 
-                           Temperatur: ${crop.optimalTemp.min}-${crop.optimalTemp.max}°C</p>
+                        <p>Luftfeuchtigkeit: ≤ ${crop.optimalHumidity.max}% | Temperatur: ${crop.optimalTemp.min}-${crop.optimalTemp.max}°C</p>
                         <p style="font-size: 0.9rem; color: var(--text-gray); margin-top: 0.5rem;">
                             ${crop.comment}
                         </p>
-                        
                         <div class="harvest-recommendation">
                             <h4>Ernteempfehlung</h4>
                             <div class="recommendation-grid">
@@ -395,11 +412,7 @@ class WeatherManager {
                                     <div class="recommendation-value">${this.weatherData.current.precip_mm} mm</div>
                                 </div>
                             </div>
-                            ${recommendation.reason ? 
-                                `<p style="margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-gray);">
-                                    <strong>Grund:</strong> ${recommendation.reason}
-                                </p>` : ''
-                            }
+                            ${recommendation.reason ? `<p style="margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-gray);"><strong>Grund:</strong> ${recommendation.reason}</p>` : ''}
                         </div>
                     </div>
                 </div>
@@ -411,6 +424,9 @@ class WeatherManager {
         console.log(`${this.selectedProducts.length} Produktkarten generiert`);
     }
 
+    /**
+     * Erntest-Status berechnen
+     */
     calculateHarvestStatus(crop) {
         if (!this.weatherData) {
             return { class: 'status-acceptable', text: 'Daten werden geladen...', reasons: [] };
@@ -423,22 +439,22 @@ class WeatherManager {
         // Temperatur prüfen
         if (current.temp_c < crop.optimalTemp.min) {
             issues++;
-            reasons.push(`Zu kalt (${current.temp_c}°C, optimal: ${crop.optimalTemp.min}-${crop.optimalTemp.max}°C)`);
+            reasons.push(`Zu kalt (${current.temp_c}°C)`);
         } else if (current.temp_c > crop.optimalTemp.max) {
             issues++;
-            reasons.push(`Zu heiß (${current.temp_c}°C, optimal: ${crop.optimalTemp.min}-${crop.optimalTemp.max}°C)`);
+            reasons.push(`Zu heiß (${current.temp_c}°C)`);
         }
         
         // Luftfeuchtigkeit prüfen
         if (current.humidity > crop.optimalHumidity.max) {
             issues++;
-            reasons.push(`Zu hohe Luftfeuchtigkeit (${current.humidity}%, optimal: ≤${crop.optimalHumidity.max}%)`);
+            reasons.push(`Zu hohe Luftfeuchtigkeit (${current.humidity}%)`);
         }
         
         // Niederschlag prüfen
         if (current.precip_mm > crop.optimalPrecip.max) {
             issues++;
-            reasons.push(`Zu viel Niederschlag (${current.precip_mm}mm, optimal: ≤${crop.optimalPrecip.max}mm)`);
+            reasons.push(`Zu viel Niederschlag (${current.precip_mm}mm)`);
         }
         
         // Status bestimmen
@@ -451,6 +467,9 @@ class WeatherManager {
         }
     }
 
+    /**
+     * Ernteempfehlung generieren
+     */
     getHarvestRecommendation(crop, status) {
         const recommendations = {
             'status-ready': {
@@ -473,6 +492,9 @@ class WeatherManager {
         };
     }
 
+    /**
+     * Standort aktualisieren
+     */
     updateLocation() {
         const locationInput = document.getElementById('location-input');
         if (!locationInput) return;
@@ -490,13 +512,16 @@ class WeatherManager {
         }
         
         this.currentLocation = newLocation;
-        console.log(`Standort geändert zu: ${newLocation}`);
+        console.log('Standort geändert zu:', newLocation);
         
         this.clearWeatherCache();
         this.resetUIToLoading();
         this.loadWeatherData();
     }
 
+    /**
+     * UI auf Loading-Zustand zurücksetzen
+     */
     resetUIToLoading() {
         this.showElement('today-loading');
         this.hideElement('today-content');
@@ -512,11 +537,9 @@ class WeatherManager {
         }
     }
 
-    getIconUrl(iconPath) {
-        if (!iconPath) return '';
-        return iconPath.startsWith('//') ? `https:${iconPath}` : iconPath;
-    }
-
+    /**
+     * Cache-Funktionen
+     */
     cacheWeatherData(data) {
         const cacheData = {
             data: data,
@@ -527,7 +550,7 @@ class WeatherManager {
         try {
             localStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
         } catch (error) {
-            console.warn('Konnte Wetterdaten nicht cachen:', error);
+            console.warn('Cache-Fehler:', error);
         }
     }
 
@@ -545,7 +568,7 @@ class WeatherManager {
             
             return null;
         } catch (error) {
-            console.warn('Fehler beim Lesen des Caches:', error);
+            console.warn('Cache-Lesefehler:', error);
             return null;
         }
     }
@@ -554,11 +577,13 @@ class WeatherManager {
         try {
             localStorage.removeItem(this.cacheKey);
         } catch (error) {
-            console.warn('Fehler beim Löschen des Caches:', error);
+            console.warn('Cache-Löschfehler:', error);
         }
     }
 
-    // Utility-Funktionen
+    /**
+     * Utility-Funktionen
+     */
     updateElement(id, value) {
         const element = document.getElementById(id);
         if (element) {
@@ -581,7 +606,7 @@ class WeatherManager {
     }
 
     showError(message) {
-        console.error(message);
+        console.error('ERROR:', message);
         
         let errorElement = document.getElementById('error-message');
         
@@ -602,6 +627,7 @@ class WeatherManager {
                     style="float: right; background: none; border: none; color: var(--danger-red); cursor: pointer; font-size: 1.2rem;">×</button>
         `;
         
+        // Auto-remove nach 10 Sekunden
         setTimeout(() => {
             if (errorElement && errorElement.parentElement) {
                 errorElement.remove();
@@ -610,14 +636,20 @@ class WeatherManager {
     }
 }
 
-// Globale Funktionen
+/**
+ * Globale Funktionen
+ */
 function updateLocation() {
     if (window.weatherManager) {
         window.weatherManager.updateLocation();
+    } else {
+        console.error('WeatherManager nicht verfügbar');
     }
 }
 
-// Debug-Funktionen
+/**
+ * Debug-Funktionen (für Entwicklung)
+ */
 window.debugWeather = {
     clearCache: () => {
         if (window.weatherManager) {
@@ -632,24 +664,48 @@ window.debugWeather = {
         if (window.weatherManager) {
             window.weatherManager.showError('Test-Fehlermeldung');
         }
+    },
+    reloadWeather: () => {
+        if (window.weatherManager) {
+            window.weatherManager.loadWeatherData();
+        }
     }
 };
 
-// Initialisierung
+/**
+ * Initialisierung beim DOM-Load
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM geladen, initialisiere WeatherManager...');
-    window.weatherManager = new WeatherManager();
+    console.log('DOM geladen, starte WeatherManager...');
+    
+    try {
+        window.weatherManager = new WeatherManager();
+        console.log('WeatherManager erfolgreich gestartet');
+    } catch (error) {
+        console.error('Kritischer Fehler beim Start:', error);
+        
+        // Fallback Error Display
+        const container = document.querySelector('.container');
+        if (container) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.innerHTML = `
+                <strong>🚨 Kritischer Fehler:</strong> JavaScript konnte nicht gestartet werden.<br>
+                <strong>Details:</strong> ${error.message}<br>
+                <strong>Lösung:</strong> Seite neu laden (F5)
+            `;
+            container.insertBefore(errorDiv, container.firstChild);
+        }
+    }
 });
 
-// Service Worker (optional)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('SW registriert:', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW Registrierung fehlgeschlagen:', registrationError);
-            });
-    });
-}
+// Globale Error Handler
+window.addEventListener('error', (event) => {
+    console.error('Globaler JavaScript-Fehler:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unbehandelte Promise-Rejection:', event.reason);
+});
+
+console.log('script.js vollständig geladen');
