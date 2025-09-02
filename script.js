@@ -57,7 +57,23 @@ const CROPS_DATABASE = {
         optimalTemp: { min: 22, max: 28 },
         optimalPrecip: { max: 2 },
         comment: 'Ölqualität sinkt bei zu hoger Kornfeuchte'
-    }
+    },
+    dinkel: {
+    name: 'Dinkel',
+    icon: '🌾',
+    optimalHumidity: { max: 14 },
+    optimalTemp: { min: 20, max: 25 },
+    optimalPrecip: { max: 3 },
+    comment: 'Sehr feuchtigkeitsempfindlich, spelzenfrei dreschen'
+    },
+    oggen: {
+    name: 'Roggen',
+    icon: '🌾',
+    optimalHumidity: { max: 16 },
+    optimalTemp: { min: 18, max: 24 },
+    optimalPrecip: { max: 4 },
+    comment: 'Auswuchsgefahr bei Nässe, rechtzeitig ernten'
+    },
 };
 
 /**
