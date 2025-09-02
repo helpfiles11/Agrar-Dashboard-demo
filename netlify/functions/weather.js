@@ -1,64 +1,99 @@
 // netlify/functions/weather.js
-const axios = require('axios');
-// /netlify/functions/weather.js
 const fetch = require('node-fetch');
-const NodeCache = require('node-cache');
-const cache = new NodeCache({ stdTTL: 600 }); // Cache für 10 Minuten
 
-exports.handler = async (event) => {
-  const API_KEY = process.env.WEATHER_API_KEY;
-  const API_URL = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=Berlin&aqi=no`;
+exports.handler = async (event, context) => {
+  // CORS Headers für Frontend-Zugriff
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
 
-  // Prüfe, ob Daten im Cache sind
-  const cachedData = cache.get("weatherData");
-  if (cachedData) {
+  // Preflight-Request für CORS
+  if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cachedData),
+      headers,
+      body: ''
     };
   }
 
   try {
-    const response = await fetch(API_URL);
-    if (!response.ok) {
-      throw new Error(`WeatherAPI Fehler: ${response.status}`);
+    // API-Key aus Umgebungsvariablen
+    const API_KEY = process.env.WEATHER_API_KEY;
+    if (!API_KEY) {
+      throw new Error('WEATHER_API_KEY ist nicht gesetzt');
     }
-    const data = await response.json();
 
-    // Speichere Daten im Cache
-    cache.set("weatherData", data);
+    // Stadt aus Query-Parameter oder Default
+    const city = event.queryStringParameters?.city || 'Berlin';
+    
+    // WeatherAPI URL für aktuelle Daten + 7-Tage Forecast
+    const API_URL = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(city)}&days=7&aqi=no&alerts=no`;
 
+    console.log(`Lade Wetterdaten für: ${city}`);
+
+    // API-Aufruf
+    const response = await fetch(API_URL);
+    
+    if (!response.ok) {
+      if (response.status === 400) {
+        throw new Error(`Ungültige Stadt: ${city}`);
+      } else if (response.status === 401) {
+        throw new Error('Ungültiger API-Key');
+      } else {
+        throw new Error(`WeatherAPI Fehler: ${response.status} - ${response.statusText}`);
+      }
+    }
+
+    const weatherData = await response.json();
+
+    // Daten-Struktur validieren
+    if (!weatherData.current || !weatherData.location) {
+      throw new Error('Unvollständige Wetterdaten erhalten');
+    }
+
+    // Optimierte Datenstruktur für Frontend
+    const optimizedData = {
+      location: {
+        name: weatherData.location.name,
+        country: weatherData.location.country,
+        region: weatherData.location.region,
+        localtime: weatherData.location.localtime
+      },
+      current: {
+        temp_c: Math.round(weatherData.current.temp_c),
+        condition: {
+          text: weatherData.current.condition.text,
+          icon: weatherData.current.condition.icon
+        },
+        humidity: weatherData.current.humidity,
+        wind_kph: Math.round(weatherData.current.wind_kph),
+        precip_mm: weatherData.current.precip_mm,
+        uv: weatherData.current.uv
+      },
+      forecast: weatherData.forecast || null
+    };
+
+    // Erfolgreiche Antwort
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      headers,
+      body: JSON.stringify(optimizedData)
     };
+
   } catch (error) {
-    console.error("Fehler in der Netlify-Funktion:", error);
+    console.error('Fehler in weather function:', error.message);
+    
+    // Fehler-Antwort
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: error.message }),
-    };
-  }
-};
-
-exports.handler = async function(event, context) {
-  const API_KEY = process.env.WEATHER_API_KEY; // Wird später in Netlify hinterlegt
-  const city = event.queryStringParameters.city || 'Berlin';
-  const URL = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${city}`;
-
-  try {
-    const response = await axios.get(URL);
-    return {
-      statusCode: 200,
-      body: JSON.stringify(response.data)
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Fehler beim Abrufen der Wetterdaten' })
+      headers,
+      body: JSON.stringify({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
     };
   }
 };

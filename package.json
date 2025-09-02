@@ -1,18 +1,32 @@
 {
   "name": "agrardashboard",
-  "version": "1.0.0",
-  "description": "Eine Wetter-App für Bauern",
+  "version": "2.0.0",
+  "description": "Modernes Agrar-Dashboard für Wetterdaten und Ernteempfehlungen",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
+    "dev": "netlify dev",
+    "build": "echo 'Build complete'",
+    "deploy": "netlify deploy --prod",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "axios": "^1.11.0",
-    "dotenv": "^17.2.1"
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
-    "netlify-cli": "^23.4.3"
-  }
+    "netlify-cli": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "agriculture",
+    "weather",
+    "harvest",
+    "farming",
+    "dashboard"
+  ],
+  "author": "helpfiles11",
+  "license": "MIT"
 }
