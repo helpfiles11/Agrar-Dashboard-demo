@@ -4,23 +4,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agrar-Dashboard</title>
+    <meta name="description" content="Intelligente Wetteranalyse für optimale Erntezeitpunkte - Agrar-Dashboard">
+    <meta name="keywords" content="Wetter, Landwirtschaft, Ernte, Dashboard, Wettervorhersage">
+    <meta name="author" content="Agrar-Dashboard">
+    <title>Agrar-Dashboard - Intelligente Wetteranalyse</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Google Fonts für bessere Typografie -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- Header mit dynamischem Standort -->
         <header class="header">
             <h1>🌱 Agrar-Dashboard</h1>
             <p>Intelligente Wetteranalyse für optimale Erntezeitpunkte</p>
+            <div id="current-location" class="location-display">
+                <span class="location-icon">📍</span>
+                <span id="location-name">Berlin, Germany</span>
+                <span id="last-update" class="last-update">Zuletzt aktualisiert: --</span>
+            </div>
         </header>
 
-        <!-- Weather Today & Tomorrow -->
+        <!-- Weather Today & Tomorrow Grid -->
         <div class="grid">
             <div class="col-6">
                 <div class="card weather-card">
@@ -30,7 +37,7 @@
                         <div class="weather-icon">
                             <img id="today-icon"
                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect width='50' height='50' fill='%23f0f0f0'/%3E%3C/svg%3E"
-                                alt="Wetter Icon">
+                                alt="Wetter Icon" width="50" height="50">
                         </div>
                         <div class="temperature" id="today-temp">--°C</div>
                         <div class="weather-desc" id="today-desc">--</div>
@@ -64,7 +71,7 @@
                         <div class="weather-icon">
                             <img id="tomorrow-icon"
                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect width='50' height='50' fill='%23f0f0f0'/%3E%3C/svg%3E"
-                                alt="Wetter Icon">
+                                alt="Wetter Icon" width="50" height="50">
                         </div>
                         <div class="temperature" id="tomorrow-temp">--°C</div>
                         <div class="weather-desc" id="tomorrow-desc">--</div>
@@ -98,44 +105,56 @@
                     <h2>📅 7-Tage Wettervorhersage</h2>
                     <div id="forecast-loading" class="loading">Lade 7-Tage-Vorhersage...</div>
                     <div id="forecast-content" class="forecast-container hidden">
-                        <!-- Wird dynamisch gefüllt -->
+                        <!-- Wird dynamisch mit JavaScript gefüllt -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Search and Filter -->
+        <!-- Search and Filter Section -->
         <div class="grid">
             <div class="col-12">
                 <div class="search-section">
-                    <h2 class="search-title">🔍 Standort & Produktsuche</h2>
+                    <h2 class="search-title">🔍 Standort &amp; Produktsuche</h2>
                     <div class="search-form">
                         <div class="form-group">
                             <label for="location-input">Standort (Stadt/PLZ)</label>
-                            <input type="text" id="location-input" placeholder="z.B. Berlin oder 10115" value="Berlin">
+                            <input type="text" id="location-input" placeholder="z.B. Berlin oder 10115" value="Berlin"
+                                autocomplete="address-level2">
                         </div>
                         <div class="form-group">
                             <label for="product-select">Produkt auswählen</label>
-                            <select id="product-select">
+                            <select id="product-select" name="product-select">
                                 <option value="all">Alle Produkte</option>
                                 <option value="weizen">Weizen</option>
                                 <option value="mais">Mais</option>
                                 <option value="raps">Raps</option>
                                 <option value="gerste">Gerste</option>
                                 <option value="kartoffeln">Kartoffeln</option>
-                                <option value="zuckerrüben">Zuckerrüben</option>
+                                <option value="zuckerrueben">Zuckerrüben</option>
                                 <option value="sonnenblumen">Sonnenblumen</option>
                             </select>
                         </div>
-                        <button type="button" class="search-btn" onclick="updateLocation()">📍 Aktualisieren</button>
+                        <button type="button" class="search-btn" onclick="updateLocation()">
+                            📍 Aktualisieren
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Product Cards -->
+        <!-- Product Cards Container -->
         <div class="grid" id="products-grid">
-            <!-- Werden dynamisch generiert basierend auf Auswahl -->
+            <!-- Produktkarten werden hier dynamisch von JavaScript eingefügt -->
+        </div>
+
+        <!-- Loading Indicator für Produktkarten -->
+        <div id="products-loading" class="grid hidden">
+            <div class="col-12">
+                <div class="card">
+                    <div class="loading">Lade Ernteempfehlungen...</div>
+                </div>
+            </div>
         </div>
     </div>
 

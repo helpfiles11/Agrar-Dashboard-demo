@@ -76,14 +76,46 @@ class WeatherManager {
     }
 
     /**
+     * Standort-Anzeige im Header aktualisieren
+     */
+    updateLocationDisplay(locationData) {
+        const locationName = document.getElementById('location-name');
+        const lastUpdate = document.getElementById('last-update');
+        
+        if (locationName) {
+            // Formatiere Standort-Information
+            let displayName = locationData.name;
+            if (locationData.region && locationData.region !== locationData.name) {
+                displayName += `, ${locationData.region}`;
+            }
+            if (locationData.country) {
+                displayName += `, ${locationData.country}`;
+            }
+            
+            locationName.textContent = displayName;
+        }
+        
+        if (lastUpdate) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('de-DE', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            lastUpdate.textContent = `Zuletzt aktualisiert: ${timeString}`;
+        }
+        
+        console.log('Standort-Anzeige aktualisiert:', locationData.name);
+    }
+
+    /**
      * Initialisierung
      */
     async init() {
         try {
             console.log('Initialisiere Agrar-Dashboard...');
             this.setupEventListeners();
-            this.updateProductSelection();
-            await this.loadWeatherData();
+            this.updateProductSelection(); // Setzt selectedProducts
+            await this.loadWeatherData(); // Lädt Wetter UND generiert Produktkarten
             console.log('Dashboard erfolgreich initialisiert');
         } catch (error) {
             console.error('Fehler bei der Initialisierung:', error);
@@ -118,6 +150,14 @@ class WeatherManager {
             console.log('Auto-refresh der Wetterdaten...');
             this.loadWeatherData();
         }, 600000);
+        
+        // Initial Produktkarten generieren (falls Wetterdaten bereits geladen)
+        if (this.weatherData) {
+            console.log('Wetterdaten bereits vorhanden, generiere Produktkarten...');
+            this.generateProductCards();
+        } else {
+            console.log('Warte auf Wetterdaten für Produktkarten...');
+        }
     }
 
     /**
@@ -137,6 +177,7 @@ class WeatherManager {
         
         console.log('Produktauswahl:', this.selectedProducts);
         
+        // Sofort Produktkarten generieren wenn Wetterdaten vorhanden
         if (this.weatherData) {
             this.generateProductCards();
         }
@@ -154,6 +195,7 @@ class WeatherManager {
             if (cachedData) {
                 console.log('Verwende gecachte Daten');
                 this.weatherData = cachedData;
+                this.updateLocationDisplay(cachedData.location);
                 this.updateWeatherUI(cachedData);
                 this.generateProductCards();
                 return;
@@ -177,6 +219,9 @@ class WeatherManager {
             }
             
             console.log('Wetterdaten geladen für:', data.location.name);
+            
+            // Standort-Anzeige aktualisieren
+            this.updateLocationDisplay(data.location);
             
             // Daten speichern und UI aktualisieren
             this.weatherData = data;
@@ -360,24 +405,37 @@ class WeatherManager {
      * Produktkarten generieren
      */
     generateProductCards() {
+        console.log('Generiere Produktkarten...');
+        
         const container = document.getElementById('products-grid');
-        if (!container) return;
+        if (!container) {
+            console.error('products-grid Container nicht gefunden!');
+            return;
+        }
         
         // Entferne alte Produktkarten
         const existingCards = container.querySelectorAll('.col-4');
         existingCards.forEach(card => card.remove());
+        console.log(`${existingCards.length} alte Karten entfernt`);
         
         if (!this.weatherData) {
             console.log('Keine Wetterdaten für Produktkarten verfügbar');
             return;
         }
         
-        this.selectedProducts.forEach(cropKey => {
+        console.log(`Generiere ${this.selectedProducts.length} Produktkarten für:`, this.selectedProducts);
+        
+        this.selectedProducts.forEach((cropKey, index) => {
             const crop = CROPS_DATABASE[cropKey];
-            if (!crop) return;
+            if (!crop) {
+                console.warn(`Crop nicht gefunden: ${cropKey}`);
+                return;
+            }
             
             const status = this.calculateHarvestStatus(crop);
             const recommendation = this.getHarvestRecommendation(crop, status);
+            
+            console.log(`Generiere Karte für ${crop.name}:`, status.text);
             
             const cardHTML = `
                 <div class="col-4">
@@ -421,7 +479,7 @@ class WeatherManager {
             container.insertAdjacentHTML('beforeend', cardHTML);
         });
         
-        console.log(`${this.selectedProducts.length} Produktkarten generiert`);
+        console.log(`✅ ${this.selectedProducts.length} Produktkarten erfolgreich generiert`);
     }
 
     /**
@@ -623,8 +681,9 @@ class WeatherManager {
         
         errorElement.innerHTML = `
             <strong>⚠️ Fehler:</strong> ${message}
-            <button onclick="this.parentElement.remove()" 
-                    style="float: right; background: none; border: none; color: var(--danger-red); cursor: pointer; font-size: 1.2rem;">×</button>
+            <button type="button" onclick="this.parentElement.remove()" 
+                    style="float: right; background: none; border: none; color: var(--danger-red); cursor: pointer; font-size: 1.2rem;" 
+                    aria-label="Fehlermeldung schließen">×</button>
         `;
         
         // Auto-remove nach 10 Sekunden
@@ -668,6 +727,18 @@ window.debugWeather = {
     reloadWeather: () => {
         if (window.weatherManager) {
             window.weatherManager.loadWeatherData();
+        }
+    },
+    forceProductCards: () => {
+        if (window.weatherManager) {
+            console.log('Force-generiere Produktkarten...');
+            window.weatherManager.generateProductCards();
+        }
+    },
+    showSelectedProducts: () => {
+        if (window.weatherManager) {
+            console.log('Ausgewählte Produkte:', window.weatherManager.selectedProducts);
+            console.log('Verfügbare Crops:', Object.keys(CROPS_DATABASE));
         }
     }
 };
