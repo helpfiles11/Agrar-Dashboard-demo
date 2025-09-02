@@ -5,11 +5,269 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agrar-Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Google Fonts für bessere Typografie -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Inline CSS zur Fehlervermeidung */
+        :root {
+            --primary-green: #2d5016;
+            --accent-green: #4a7c1e;
+            --light-green: #6b9c2f;
+            --success-green: #22c55e;
+            --warning-orange: #f97316;
+            --danger-red: #ef4444;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --text-dark: #1e293b;
+            --text-gray: #64748b;
+            --border-light: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --radius: 8px;
+            --radius-xl: 16px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-xl) var(--spacing-md);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .header h1 {
+            color: var(--primary-green);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .header p {
+            color: var(--text-gray);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .col-6 {
+            grid-column: span 6;
+        }
+
+        .col-12 {
+            grid-column: span 12;
+        }
+
+        .col-4 {
+            grid-column: span 4;
+        }
+
+        .card {
+            background: var(--bg-white);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-light);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            color: var(--primary-green);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .weather-card {
+            text-align: center;
+        }
+
+        .weather-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--spacing-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent-green), var(--light-green));
+            border-radius: 50%;
+        }
+
+        .weather-icon img {
+            width: 50px;
+            height: 50px;
+        }
+
+        .temperature {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .weather-desc {
+            color: var(--text-gray);
+            font-size: 1.1rem;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+            text-align: left;
+        }
+
+        .weather-detail {
+            background: var(--bg-light);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius);
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .weather-detail-label {
+            font-size: 0.875rem;
+            color: var(--text-gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .weather-detail-value {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--spacing-xl);
+            color: var(--text-gray);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: var(--danger-red);
+            padding: var(--spacing-md);
+            border-radius: var(--radius);
+            border: 1px solid #fecaca;
+            margin: var(--spacing-md) 0;
+        }
+
+        .search-section {
+            background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
+            color: white;
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+        }
+
+        .search-title {
+            color: white;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: var(--spacing-md);
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .search-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: var(--success-green);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .search-btn:hover {
+            background: #16a34a;
+        }
+
+        .forecast-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .forecast-day {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--bg-light);
+            border-radius: var(--radius);
+        }
+
+        .forecast-date {
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            color: var(--primary-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .col-6 {
+                grid-column: span 12;
+            }
+
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -19,6 +277,13 @@
             <h1>🌱 Agrar-Dashboard</h1>
             <p>Intelligente Wetteranalyse für optimale Erntezeitpunkte</p>
         </header>
+
+        <!-- Debug Info -->
+        <div id="debug-info" class="card"
+            style="background: #f0f9ff; border-left: 4px solid #0284c7; margin-bottom: 2rem;">
+            <h3 style="color: #0284c7; margin-bottom: 1rem;">🔧 Debug-Informationen</h3>
+            <div id="debug-content">JavaScript wird geladen...</div>
+        </div>
 
         <!-- Weather Today & Tomorrow -->
         <div class="grid">
@@ -123,7 +388,7 @@
                                 <option value="raps">Raps</option>
                                 <option value="gerste">Gerste</option>
                                 <option value="kartoffeln">Kartoffeln</option>
-                                <option value="zuckerrüben">Zuckerrüben</option>
+                                <option value="zuckerrueben">Zuckerrüben</option>
                                 <option value="sonnenblumen">Sonnenblumen</option>
                             </select>
                         </div>
@@ -135,11 +400,326 @@
 
         <!-- Product Cards -->
         <div class="grid" id="products-grid">
-            <!-- Werden dynamisch generiert basierend auf Auswahl -->
+            <!-- Werden dynamisch generiert -->
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Debug-Funktionen
+        function debugLog(message, data = null) {
+            console.log(`[DEBUG] ${message}`, data || '');
+            const debugContent = document.getElementById('debug-content');
+            if (debugContent) {
+                const time = new Date().toLocaleTimeString();
+                debugContent.innerHTML += `<div style="margin: 2px 0; font-size: 0.9rem;">[${time}] ${message}</div>`;
+            }
+        }
+
+        // Produktdatenbank
+        const CROPS_DATABASE = {
+            weizen: {
+                name: 'Weizen',
+                icon: '🌾',
+                optimalHumidity: { max: 60 },
+                optimalTemp: { min: 22, max: 26 },
+                optimalPrecip: { max: 5 },
+                comment: 'Unter 18% Kornfeuchte'
+            },
+            mais: {
+                name: 'Mais',
+                icon: '🌽',
+                optimalHumidity: { max: 20 },
+                optimalTemp: { min: 15, max: 30 },
+                optimalPrecip: { max: 2 },
+                comment: 'Bei zu hoher Luftfeuchte steigt Schimmelrisiko'
+            },
+            sonnenblumen: {
+                name: 'Sonnenblumen',
+                icon: '🌻',
+                optimalHumidity: { max: 15 },
+                optimalTemp: { min: 22, max: 28 },
+                optimalPrecip: { max: 2 },
+                comment: 'Ölqualität sinkt bei zu hoher Kornfeuchte'
+            }
+        };
+
+        // Vereinfachte WeatherManager Klasse
+        class SimpleWeatherManager {
+            constructor() {
+                this.currentLocation = 'Berlin';
+                this.apiEndpoint = '/.netlify/functions/weather';
+                this.selectedProducts = ['weizen', 'mais', 'sonnenblumen'];
+                this.weatherData = null;
+
+                debugLog('WeatherManager initialisiert');
+                this.init();
+            }
+
+            async init() {
+                try {
+                    debugLog('Starte Initialisierung...');
+                    await this.loadWeatherData();
+                    this.setupEventListeners();
+                    debugLog('Initialisierung erfolgreich abgeschlossen');
+                } catch (error) {
+                    debugLog('Fehler bei Initialisierung: ' + error.message);
+                    this.showError('Initialisierung fehlgeschlagen: ' + error.message);
+                }
+            }
+
+            setupEventListeners() {
+                const locationInput = document.getElementById('location-input');
+                if (locationInput) {
+                    locationInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.updateLocation();
+                        }
+                    });
+                    debugLog('Event Listener für location-input hinzugefügt');
+                }
+
+                const productSelect = document.getElementById('product-select');
+                if (productSelect) {
+                    productSelect.addEventListener('change', () => {
+                        this.updateProductSelection();
+                    });
+                    debugLog('Event Listener für product-select hinzugefügt');
+                }
+            }
+
+            async loadWeatherData() {
+                try {
+                    debugLog(`Lade Wetterdaten für: ${this.currentLocation}`);
+
+                    const response = await fetch(`${this.apiEndpoint}?city=${encodeURIComponent(this.currentLocation)}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    debugLog('Wetterdaten erfolgreich geladen', data.location.name);
+                    this.weatherData = data;
+                    this.updateWeatherUI(data);
+
+                } catch (error) {
+                    debugLog('Fehler beim Laden der Wetterdaten: ' + error.message);
+                    this.showError('Fehler beim Laden der Wetterdaten: ' + error.message);
+                }
+            }
+
+            updateWeatherUI(data) {
+                try {
+                    debugLog('Aktualisiere Weather UI...');
+
+                    // Heute
+                    this.hideElement('today-loading');
+                    this.showElement('today-content');
+
+                    this.updateElement('today-temp', `${data.current.temp_c}°C`);
+                    this.updateElement('today-desc', data.current.condition.text);
+                    this.updateElement('today-humidity', `${data.current.humidity}%`);
+                    this.updateElement('today-wind', `${data.current.wind_kph} km/h`);
+                    this.updateElement('today-precipitation', `${data.current.precip_mm} mm`);
+                    this.updateElement('today-uv', data.current.uv || '--');
+
+                    const todayIcon = document.getElementById('today-icon');
+                    if (todayIcon && data.current.condition.icon) {
+                        todayIcon.src = `https:${data.current.condition.icon}`;
+                    }
+
+                    // Morgen (vereinfacht)
+                    this.hideElement('tomorrow-loading');
+                    this.showElement('tomorrow-content');
+
+                    if (data.forecast && data.forecast.forecastday && data.forecast.forecastday.length > 1) {
+                        const tomorrow = data.forecast.forecastday[1];
+                        const avgTemp = Math.round((tomorrow.day.maxtemp_c + tomorrow.day.mintemp_c) / 2);
+
+                        this.updateElement('tomorrow-temp', `${avgTemp}°C`);
+                        this.updateElement('tomorrow-desc', tomorrow.day.condition.text);
+                        this.updateElement('tomorrow-minmax', `${Math.round(tomorrow.day.maxtemp_c)}°C / ${Math.round(tomorrow.day.mintemp_c)}°C`);
+                        this.updateElement('tomorrow-rain-chance', `${tomorrow.day.daily_chance_of_rain || 0}%`);
+                        this.updateElement('tomorrow-precipitation', `${tomorrow.day.totalprecip_mm} mm`);
+                        this.updateElement('tomorrow-humidity', `${tomorrow.day.avghumidity}%`);
+
+                        const tomorrowIcon = document.getElementById('tomorrow-icon');
+                        if (tomorrowIcon) {
+                            tomorrowIcon.src = `https:${tomorrow.day.condition.icon}`;
+                        }
+                    }
+
+                    // 7-Tage Forecast (vereinfacht)
+                    this.updateSimpleForecast(data.forecast);
+
+                    debugLog('Weather UI erfolgreich aktualisiert');
+                } catch (error) {
+                    debugLog('Fehler beim Aktualisieren der UI: ' + error.message);
+                }
+            }
+
+            updateSimpleForecast(forecast) {
+                this.hideElement('forecast-loading');
+                this.showElement('forecast-content');
+
+                const container = document.getElementById('forecast-content');
+                if (!container || !forecast || !forecast.forecastday) return;
+
+                container.innerHTML = '';
+
+                const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+                forecast.forecastday.slice(1, 8).forEach(day => {
+                    const date = new Date(day.date);
+                    const dayName = days[date.getDay()];
+                    const dayDate = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'forecast-day';
+                    dayElement.innerHTML = `
+                        <div class="forecast-date">${dayName}<br>${dayDate}</div>
+                        <img src="https:${day.day.condition.icon}" alt="${day.day.condition.text}" width="40" height="40">
+                        <div style="font-weight: bold; margin: 0.5rem 0;">
+                            ${Math.round(day.day.maxtemp_c)}° / ${Math.round(day.day.mintemp_c)}°
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-gray);">
+                            ${day.day.daily_chance_of_rain || 0}% Regen
+                        </div>
+                    `;
+
+                    container.appendChild(dayElement);
+                });
+            }
+
+            updateProductSelection() {
+                const select = document.getElementById('product-select');
+                if (!select) return;
+
+                const selectedValue = select.value;
+
+                if (selectedValue === 'all') {
+                    this.selectedProducts = Object.keys(CROPS_DATABASE);
+                } else {
+                    this.selectedProducts = [selectedValue];
+                }
+
+                debugLog('Produktauswahl aktualisiert: ' + this.selectedProducts.join(', '));
+            }
+
+            updateLocation() {
+                const locationInput = document.getElementById('location-input');
+                if (!locationInput) return;
+
+                const newLocation = locationInput.value.trim();
+
+                if (!newLocation) {
+                    this.showError('Bitte geben Sie einen gültigen Standort ein.');
+                    return;
+                }
+
+                if (newLocation === this.currentLocation) {
+                    debugLog('Standort unverändert');
+                    return;
+                }
+
+                this.currentLocation = newLocation;
+                debugLog(`Standort geändert zu: ${newLocation}`);
+
+                this.resetUIToLoading();
+                this.loadWeatherData();
+            }
+
+            resetUIToLoading() {
+                this.showElement('today-loading');
+                this.hideElement('today-content');
+                this.showElement('tomorrow-loading');
+                this.hideElement('tomorrow-content');
+                this.showElement('forecast-loading');
+                this.hideElement('forecast-content');
+            }
+
+            // Utility Funktionen
+            updateElement(id, value) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            }
+
+            showElement(id) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.remove('hidden');
+                }
+            }
+
+            hideElement(id) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.add('hidden');
+                }
+            }
+
+            showError(message) {
+                debugLog('ERROR: ' + message);
+
+                let errorElement = document.getElementById('error-message');
+
+                if (!errorElement) {
+                    errorElement = document.createElement('div');
+                    errorElement.id = 'error-message';
+                    errorElement.className = 'error';
+
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.insertBefore(errorElement, container.children[1]); // Nach debug-info
+                    }
+                }
+
+                errorElement.innerHTML = `
+                    <strong>⚠️ Fehler:</strong> ${message}
+                    <button onclick="this.parentElement.remove()" 
+                            style="float: right; background: none; border: none; color: var(--danger-red); cursor: pointer; font-size: 1.2rem;">×</button>
+                `;
+            }
+        }
+
+        // Globale Funktionen
+        function updateLocation() {
+            if (window.weatherManager) {
+                window.weatherManager.updateLocation();
+            }
+        }
+
+        // Debug-Funktionen
+        window.debugWeather = {
+            getCurrentData: () => {
+                return window.weatherManager ? window.weatherManager.weatherData : null;
+            },
+            testError: () => {
+                if (window.weatherManager) {
+                    window.weatherManager.showError('Test-Fehlermeldung');
+                }
+            }
+        };
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            debugLog('DOM geladen, initialisiere WeatherManager...');
+            try {
+                window.weatherManager = new SimpleWeatherManager();
+                debugLog('WeatherManager erfolgreich erstellt');
+            } catch (error) {
+                debugLog('Fehler beim Erstellen des WeatherManagers: ' + error.message);
+                document.getElementById('debug-content').innerHTML += `<div style="color: red; font-weight: bold;">KRITISCHER FEHLER: ${error.message}</div>`;
+            }
+        });
+    </script>
 </body>
 
 </html>
