@@ -266,6 +266,17 @@ class WeatherManager {
             this.updateElement('today-wind', `${data.current.wind_kph} km/h`);
             this.updateElement('today-precipitation', `${data.current.precip_mm} mm`);
             this.updateElement('today-uv', data.current.uv || '--');
+
+            if (data.forecast && data.forecast.forecastday && data.forecast.forecastday.length > 0) {
+            const todayForecast = data.forecast.forecastday[0];
+            this.updateElement('today-minmax', 
+            `${Math.round(todayForecast.day.maxtemp_c)}°C / ${Math.round(todayForecast.day.mintemp_c)}°C`);
+            this.updateElement('today-rain-chance', `${todayForecast.day.daily_chance_of_rain || 0}%`);
+            } else {
+            // Fallback wenn keine Forecast-Daten
+            this.updateElement('today-minmax', `${data.current.temp_c}°C / ${data.current.temp_c}°C`);
+            this.updateElement('today-rain-chance', '--');
+}
             
             // Icon für heute
             const todayIcon = document.getElementById('today-icon');
@@ -304,6 +315,9 @@ class WeatherManager {
         this.updateElement('tomorrow-rain-chance', `${tomorrowData.day.daily_chance_of_rain || 0}%`);
         this.updateElement('tomorrow-precipitation', `${tomorrowData.day.totalprecip_mm} mm`);
         this.updateElement('tomorrow-humidity', `${tomorrowData.day.avghumidity}%`);
+        // NEU: Fehlende Werte für morgen:
+        this.updateElement('tomorrow-wind', `${Math.round(tomorrowData.day.maxwind_kph)} km/h`);
+        this.updateElement('tomorrow-uv', tomorrowData.day.uv || '--');
         
         const tomorrowIcon = document.getElementById('tomorrow-icon');
         if (tomorrowIcon && tomorrowData.day.condition.icon) {
