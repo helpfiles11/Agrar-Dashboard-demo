@@ -509,26 +509,28 @@ class WeatherManager {
                             ${crop.comment}
                         </p>
                         <div class="harvest-recommendation">
-                            <h4>Ernteempfehlung</h4>
+                            <h4>🎯 Ernteempfehlung (7-Tage-Analyse)</h4>
                             <div class="recommendation-grid">
                                 <div class="recommendation-item">
-                                    <div class="recommendation-label">Status</div>
+                                    <div class="recommendation-label">Bester Tag</div>
                                     <div class="recommendation-value">${recommendation.when}</div>
                                 </div>
                                 <div class="recommendation-item">
-                                    <div class="recommendation-label">Temperatur</div>
+                                    <div class="recommendation-label">Heute Temp.</div>
                                     <div class="recommendation-value">${this.weatherData.current.temp_c}°C</div>
                                 </div>
                                 <div class="recommendation-item">
-                                    <div class="recommendation-label">Luftfeuchte</div>
+                                    <div class="recommendation-label">Heute Feuchte</div>
                                     <div class="recommendation-value">${this.weatherData.current.humidity}%</div>
                                 </div>
                                 <div class="recommendation-item">
-                                    <div class="recommendation-label">Niederschlag</div>
+                                    <div class="recommendation-label">Regen heute</div>
                                     <div class="recommendation-value">${this.weatherData.current.precip_mm} mm</div>
                                 </div>
                             </div>
-                            ${recommendation.reason ? `<p style="margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-gray);"><strong>Grund:</strong> ${recommendation.reason}</p>` : ''}
+                            ${recommendation.reason ? `<p style="margin-top: 0.75rem; font-size: 0.875rem; color: var(--text-gray);"><strong>Analyse:</strong> ${recommendation.reason}</p>` : ''}
+                            ${recommendation.forecast && recommendation.forecast.summary ? this.generateForecastSummaryHTML(recommendation.forecast.summary) : ''}
+                            ${recommendation.forecast && recommendation.forecast.allDays ? this.generateWeekOverviewHTML(recommendation.forecast.allDays) : ''}
                         </div>
                     </div>
                 </div>
@@ -678,27 +680,252 @@ class WeatherManager {
     }
 
     /**
-     * Ernteempfehlung generieren
+     * Umfassende 7-Tage-Forecast-Analyse für Ernte
+     */
+    analyze7DayForecast(crop) {
+        if (!this.weatherData || !this.weatherData.forecast || !this.weatherData.forecast.forecastday) {
+            return null;
+        }
+
+        const forecastDays = this.weatherData.forecast.forecastday;
+        let optimalDay = null;
+        let acceptableDay = null;
+        let allDays = [];
+
+        // Analysiere jeden Tag (außer heute - Index 0)
+        for (let i = 1; i < Math.min(forecastDays.length, 8); i++) {
+            const day = forecastDays[i];
+            const dayWeather = {
+                temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
+                humidity: day.day.avghumidity,
+                precip_mm: day.day.totalprecip_mm,
+                maxtemp_c: day.day.maxtemp_c,
+                mintemp_c: day.day.mintemp_c,
+                wind_kph: day.day.maxwind_kph,
+                condition: day.day.condition.text,
+                rain_chance: day.day.daily_chance_of_rain || 0
+            };
+
+            const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
+            const date = new Date(day.date);
+            const dateString = date.toLocaleDateString('de-DE', { 
+                weekday: 'short', 
+                day: '2-digit', 
+                month: '2-digit' 
+            });
+
+            const dayAnalysis = {
+                daysFromNow: i,
+                date: dateString,
+                weather: dayWeather,
+                issues: dayStatus.issues,
+                reasons: dayStatus.reasons,
+                score: this.calculateHarvestScore(crop, dayWeather),
+                suitability: this.getHarvestSuitability(dayStatus.issues)
+            };
+
+            allDays.push(dayAnalysis);
+
+            // Finde optimalen Tag (keine Probleme)
+            if (!optimalDay && dayStatus.issues === 0) {
+                optimalDay = {
+                    ...dayAnalysis,
+                    reason: `Perfekte Bedingungen: ${Math.round(dayWeather.temp_c)}°C, ${dayWeather.humidity}% Feuchte, ${dayWeather.precip_mm}mm Regen`
+                };
+            }
+
+            // Finde akzeptablen Tag (nur ein Problem)
+            if (!acceptableDay && dayStatus.issues <= 1) {
+                acceptableDay = {
+                    ...dayAnalysis,
+                    reason: dayStatus.issues === 0 ? 
+                        `Gute Bedingungen: ${Math.round(dayWeather.temp_c)}°C, ${dayWeather.humidity}% Feuchte` :
+                        `Akzeptabel: ${dayStatus.reasons[0]}`
+                };
+            }
+        }
+
+        // Sortiere alle Tage nach Score (bester zuerst)
+        allDays.sort((a, b) => b.score - a.score);
+
+        return {
+            optimalDay,
+            acceptableDay,
+            bestAvailableDay: allDays[0],
+            allDays,
+            summary: this.generateForecastSummary(allDays, crop)
+        };
+    }
+
+    /**
+     * Berechnet einen numerischen Score für Erntetauglichkeit (0-100)
+     */
+    calculateHarvestScore(crop, dayWeather) {
+        let score = 100;
+
+        // Temperatur-Score (0-35 Punkte)
+        const tempOptimal = (crop.optimalTemp.min + crop.optimalTemp.max) / 2;
+        const tempDiff = Math.abs(dayWeather.temp_c - tempOptimal);
+        if (tempDiff > 10) score -= 35;
+        else if (tempDiff > 5) score -= 20;
+        else if (tempDiff > 2) score -= 10;
+
+        // Luftfeuchtigkeits-Score (0-35 Punkte)
+        const humidityExcess = Math.max(0, dayWeather.humidity - crop.optimalHumidity.max);
+        if (humidityExcess > 30) score -= 35;
+        else if (humidityExcess > 15) score -= 25;
+        else if (humidityExcess > 5) score -= 15;
+        else if (humidityExcess > 0) score -= 5;
+
+        // Niederschlags-Score (0-30 Punkte)
+        const precipExcess = Math.max(0, dayWeather.precip_mm - crop.optimalPrecip.max);
+        if (precipExcess > 10) score -= 30;
+        else if (precipExcess > 5) score -= 20;
+        else if (precipExcess > 2) score -= 10;
+        else if (precipExcess > 0) score -= 5;
+
+        return Math.max(0, score);
+    }
+
+    /**
+     * Bestimmt Erntetauglichkeit basierend auf Anzahl der Probleme
+     */
+    getHarvestSuitability(issues) {
+        if (issues === 0) return 'optimal';
+        if (issues === 1) return 'gut';
+        if (issues === 2) return 'akzeptabel';
+        return 'problematisch';
+    }
+
+    /**
+     * Generiert eine Zusammenfassung der 7-Tage-Vorhersage
+     */
+    generateForecastSummary(allDays, crop) {
+        const optimalDays = allDays.filter(day => day.issues === 0).length;
+        const goodDays = allDays.filter(day => day.issues <= 1).length;
+        const avgScore = allDays.reduce((sum, day) => sum + day.score, 0) / allDays.length;
+
+        let summary = '';
+        if (optimalDays > 0) {
+            summary = `${optimalDays} optimal${optimalDays > 1 ? 'e' : 'er'} Tag${optimalDays > 1 ? 'e' : ''} in den nächsten 7 Tagen`;
+        } else if (goodDays > 0) {
+            summary = `${goodDays} akzeptabel${goodDays > 1 ? 'e' : 'er'} Tag${goodDays > 1 ? 'e' : ''} verfügbar`;
+        } else {
+            summary = 'Schwierige Wetterlage - Ernte mit Einschränkungen';
+        }
+
+        return {
+            text: summary,
+            optimalDays,
+            goodDays,
+            avgScore: Math.round(avgScore),
+            recommendation: avgScore >= 80 ? 'Sehr gute Ernteaussichten' :
+                          avgScore >= 60 ? 'Gute Erntemöglichkeiten' :
+                          avgScore >= 40 ? 'Eingeschränkte Erntebedingungen' :
+                          'Ernte nur bei Notwendigkeit'
+        };
+    }
+
+    /**
+     * Ernteempfehlung generieren - Erweitert für 7-Tage-Analyse
      */
     getHarvestRecommendation(crop, status) {
-        const optimalDay = this.findOptimalHarvestDay(crop);
+        const forecast7Days = this.analyze7DayForecast(crop);
         
         if (status.class === 'status-ready') {
             return {
                 when: 'Heute optimal',
-                reason: 'Alle Bedingungen erfüllt'
+                reason: 'Alle Bedingungen erfüllt - Ernte sofort möglich',
+                forecast: forecast7Days
             };
-        } else if (optimalDay) {
+        } 
+        
+        if (forecast7Days && forecast7Days.optimalDay) {
+            const optimalDay = forecast7Days.optimalDay;
             return {
-                when: `In ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''}`,
-                reason: `${optimalDay.date} - ${optimalDay.reason}`
-            };
-        } else {
-            return {
-                when: 'Warten empfohlen',
-                reason: status.reasons.slice(0, 2).join('; ')
+                when: `${optimalDay.date} (in ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''})`,
+                reason: `Bester Zeitpunkt: ${optimalDay.reason}`,
+                forecast: forecast7Days
             };
         }
+        
+        if (forecast7Days && forecast7Days.acceptableDay) {
+            const acceptableDay = forecast7Days.acceptableDay;
+            return {
+                when: `${acceptableDay.date} (in ${acceptableDay.daysFromNow} Tag${acceptableDay.daysFromNow > 1 ? 'en' : ''})`,
+                reason: `Akzeptabler Zeitpunkt: ${acceptableDay.reason}`,
+                forecast: forecast7Days
+            };
+        }
+        
+        return {
+            when: 'Keine optimalen Bedingungen in Sicht',
+            reason: status.reasons.slice(0, 2).join('; ') + ' - Weitere Wetterbeobachtung empfohlen',
+            forecast: forecast7Days
+        };
+    }
+
+    /**
+     * Generiert HTML für Forecast-Zusammenfassung
+     */
+    generateForecastSummaryHTML(summary) {
+        const progressWidth = (summary.avgScore / 100) * 100;
+        const progressColor = summary.avgScore >= 80 ? 'var(--success-green)' :
+                             summary.avgScore >= 60 ? 'var(--warning-orange)' :
+                             'var(--danger-red)';
+
+        return `
+            <div class="forecast-summary" style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-light); border-radius: var(--radius);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 0.9rem; color: var(--primary-green);">7-Tage-Überblick</strong>
+                    <span style="font-size: 0.8rem; color: var(--text-gray);">Ernte-Score: ${summary.avgScore}/100</span>
+                </div>
+                <div style="background: white; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem;">
+                    <div style="background: ${progressColor}; height: 100%; width: ${progressWidth}%; transition: width 0.3s ease;"></div>
+                </div>
+                <p style="margin: 0; font-size: 0.875rem; color: var(--text-gray);">
+                    ${summary.text} - ${summary.recommendation}
+                </p>
+            </div>
+        `;
+    }
+
+    /**
+     * Generiert HTML für 7-Tage-Wochenübersicht
+     */
+    generateWeekOverviewHTML(allDays) {
+        const daysHTML = allDays.slice(0, 7).map(day => {
+            const statusIcon = day.suitability === 'optimal' ? '🟢' :
+                              day.suitability === 'gut' ? '🟡' :
+                              day.suitability === 'akzeptabel' ? '🟠' : '🔴';
+            
+            const bgColor = day.suitability === 'optimal' ? 'rgba(34, 197, 94, 0.1)' :
+                           day.suitability === 'gut' ? 'rgba(249, 115, 22, 0.1)' :
+                           day.suitability === 'akzeptabel' ? 'rgba(249, 115, 22, 0.1)' :
+                           'rgba(239, 68, 68, 0.1)';
+
+            return `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; background: ${bgColor}; border-radius: 4px; margin-bottom: 2px; padding: 0.25rem 0.5rem;">
+                    <span style="font-size: 0.8rem; font-weight: 500; min-width: 60px;">${day.date}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-gray); flex: 1; text-align: center;">
+                        ${Math.round(day.weather.temp_c)}°C, ${day.weather.humidity}%
+                    </span>
+                    <span style="font-size: 0.8rem;">${statusIcon} ${day.score}</span>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="week-overview" style="margin-top: 1rem;">
+                <h5 style="margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--primary-green); font-weight: 600;">
+                    📊 Tägliche Ernte-Eignung (Score 0-100)
+                </h5>
+                <div style="font-size: 0.75rem; color: var(--text-gray); margin-bottom: 0.5rem;">
+                    🟢 Optimal | 🟡 Gut | 🟠 Akzeptabel | 🔴 Problematisch
+                </div>
+                ${daysHTML}
+            </div>
+        `;
     }
 
     /**
