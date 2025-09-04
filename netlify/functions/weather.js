@@ -26,11 +26,27 @@ exports.handler = async (event, context) => {
       throw new Error('WEATHER_API_KEY ist nicht gesetzt');
     }
 
-    // Stadt aus Query-Parameter oder Default
+    // Stadt und Land aus Query-Parameter
     let city = event.queryStringParameters?.city || 'Berlin';
+    const selectedCountry = event.queryStringParameters?.country || 'germany';
     
-    // Verbesserte deutsche PLZ-Behandlung mit bekannten Zuordnungen
+    // Verbesserte Standort-Behandlung mit Länder-Mapping
     city = city.trim();
+    
+    // Länder-Mapping für präzise Standortsuche
+    const countryMappings = {
+      'germany': 'Germany',
+      'austria': 'Austria', 
+      'switzerland': 'Switzerland',
+      'france': 'France',
+      'netherlands': 'Netherlands',
+      'belgium': 'Belgium',
+      'denmark': 'Denmark',
+      'poland': 'Poland',
+      'czech': 'Czech Republic'
+    };
+    
+    const countryName = countryMappings[selectedCountry] || 'Germany';
     
     // Deutsche PLZ-zu-Stadt-Mappings für häufige Postleitzahlen
     const germanPostalCodes = {
@@ -60,14 +76,29 @@ exports.handler = async (event, context) => {
       '90403': 'Nuremberg, Germany',
     };
     
-    // Prüfe ob es eine bekannte deutsche PLZ ist
-    if (germanPostalCodes[city]) {
+    // Intelligente Standort-Behandlung mit Land
+    if (selectedCountry === 'germany' && germanPostalCodes[city]) {
+      // Deutsche PLZ aus Mapping verwenden
       city = germanPostalCodes[city];
       console.log(`Deutsche PLZ erkannt: ${event.queryStringParameters?.city} -> ${city}`);
-    } else if (/^\d{5}$/.test(city)) {
-      // Fallback: Füge Germany hinzu für andere 5-stellige Zahlen
-      city = `${city}, Germany`;
-      console.log(`5-stellige Zahl als PLZ behandelt: ${event.queryStringParameters?.city} -> ${city}`);
+    } else if (/^\d{5}$/.test(city) && selectedCountry === 'germany') {
+      // Deutsche PLZ fallback
+      city = `${city}, ${countryName}`;
+      console.log(`Deutsche PLZ behandelt: ${event.queryStringParameters?.city} -> ${city}`);
+    } else if (/^\d{4}$/.test(city) && selectedCountry === 'austria') {
+      // Österreichische PLZ (4-stellig)
+      city = `${city}, ${countryName}`;
+      console.log(`Österreichische PLZ: ${event.queryStringParameters?.city} -> ${city}`);
+    } else if (/^\d{4}$/.test(city) && selectedCountry === 'switzerland') {
+      // Schweizer PLZ (4-stellig) 
+      city = `${city}, ${countryName}`;
+      console.log(`Schweizer PLZ: ${event.queryStringParameters?.city} -> ${city}`);
+    } else {
+      // Stadtname mit Land
+      if (!city.toLowerCase().includes(countryName.toLowerCase())) {
+        city = `${city}, ${countryName}`;
+      }
+      console.log(`Standort mit Land: ${event.queryStringParameters?.city} -> ${city}`);
     }
     
     // WeatherAPI URL für aktuelle Daten + 7-Tage Forecast

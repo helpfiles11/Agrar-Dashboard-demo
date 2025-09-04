@@ -251,8 +251,12 @@ class WeatherManager {
                 return;
             }
             
-            // API-Aufruf
-            const response = await fetch(`${this.apiEndpoint}?city=${encodeURIComponent(this.currentLocation)}`);
+            // Land-Parameter ermitteln
+            const countrySelect = document.getElementById('country-select');
+            const selectedCountry = countrySelect ? countrySelect.value : 'germany';
+            
+            // API-Aufruf mit Land-Parameter
+            const response = await fetch(`${this.apiEndpoint}?city=${encodeURIComponent(this.currentLocation)}&country=${selectedCountry}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -977,14 +981,19 @@ class WeatherManager {
      * Cache-Funktionen
      */
     cacheWeatherData(data) {
+        const countrySelect = document.getElementById('country-select');
+        const selectedCountry = countrySelect ? countrySelect.value : 'germany';
+        
         const cacheData = {
             data: data,
             timestamp: Date.now(),
-            location: this.currentLocation
+            location: this.currentLocation,
+            country: selectedCountry
         };
         
         try {
-            localStorage.setItem(this.cacheKey, JSON.stringify(cacheData));
+            const cacheKeyWithCountry = `${this.cacheKey}_${selectedCountry}`;
+            localStorage.setItem(cacheKeyWithCountry, JSON.stringify(cacheData));
         } catch (error) {
             console.warn('Cache-Fehler:', error);
         }
@@ -992,12 +1001,17 @@ class WeatherManager {
 
     getCachedWeatherData() {
         try {
-            const cached = localStorage.getItem(this.cacheKey);
+            const countrySelect = document.getElementById('country-select');
+            const selectedCountry = countrySelect ? countrySelect.value : 'germany';
+            const cacheKeyWithCountry = `${this.cacheKey}_${selectedCountry}`;
+            
+            const cached = localStorage.getItem(cacheKeyWithCountry);
             if (!cached) return null;
             
             const cacheData = JSON.parse(cached);
             
             if (cacheData.location === this.currentLocation && 
+                cacheData.country === selectedCountry &&
                 (Date.now() - cacheData.timestamp) < this.cacheTimeout) {
                 return cacheData.data;
             }

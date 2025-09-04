@@ -365,7 +365,7 @@ body {
 
 .search-form {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1fr auto;
     gap: var(--spacing-md);
     align-items: end;
     position: relative;
