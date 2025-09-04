@@ -273,10 +273,10 @@ class WeatherManager {
             `${Math.round(todayForecast.day.maxtemp_c)}°C / ${Math.round(todayForecast.day.mintemp_c)}°C`);
             this.updateElement('today-rain-chance', `${todayForecast.day.daily_chance_of_rain || 0}%`);
             } else {
-            // Fallback wenn keine Forecast-Daten
-            this.updateElement('today-minmax', `${data.current.temp_c}°C / ${data.current.temp_c}°C`);
-            this.updateElement('today-rain-chance', '--');
-}
+                    // Fallback wenn keine Forecast-Daten
+                    this.updateElement('today-minmax', `${data.current.temp_c}°C / ${data.current.temp_c}°C`);
+                    this.updateElement('today-rain-chance', '--');
+                    }
             
             // Icon für heute
             const todayIcon = document.getElementById('today-icon');
@@ -578,7 +578,131 @@ class WeatherManager {
             when: 'Unbekannt',
             reason: 'Daten nicht verfügbar'
         };
+        // Prüfe 7-Tage-Vorhersage für optimalen Erntezeitpunkt
+        const optimalDay = this.findOptimalHarvestDay(crop);
+    
+        if (status.class === 'status-ready') {
+        return {
+            when: 'Heute optimal',
+            reason: 'Alle Bedingungen erfüllt',
+            futureDay: null
+        };
+    }    else if (optimalDay) {
+        return {
+            when: `In ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''}`,
+            reason: `${optimalDay.date} - ${optimalDay.reason}`,
+            futureDay: optimalDay
+        };
+        } else {
+        return {
+            when: 'Warten empfohlen',
+            reason: status.reasons.slice(0, 2).join('; '),
+            futureDay: null
+        };
     }
+    }
+
+    /**
+ * Findet den optimalen Erntezeitpunkt in der 7-Tage-Vorhersage
+ */
+findOptimalHarvestDay(crop) {
+    if (!this.weatherData || !this.weatherData.forecast || !this.weatherData.forecast.forecastday) {
+        return null;
+    }
+    
+    const forecastDays = this.weatherData.forecast.forecastday;
+    
+    // Prüfe jeden Tag (außer heute - Index 0)
+    for (let i = 1; i < forecastDays.length; i++) {
+        const day = forecastDays[i];
+        const dayWeather = {
+            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
+            humidity: day.day.avghumidity,
+            precip_mm: day.day.totalprecip_mm
+        };
+        
+        // Prüfe ob dieser Tag optimal ist
+        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
+        
+        if (dayStatus.issues === 0) {
+            const date = new Date(day.date);
+            const dateString = date.toLocaleDateString('de-DE', { 
+                weekday: 'short', 
+                day: '2-digit', 
+                month: '2-digit' 
+            });
+            
+            return {
+                daysFromNow: i,
+                date: dateString,
+                reason: 'Optimale Bedingungen erwartet',
+                weather: dayWeather
+            };
+        }
+    }
+    
+    // Falls kein perfekter Tag gefunden, finde den besten verfügbaren
+    let bestDay = null;
+    let minIssues = Infinity;
+    
+    for (let i = 1; i < forecastDays.length; i++) {
+        const day = forecastDays[i];
+        const dayWeather = {
+            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
+            humidity: day.day.avghumidity,
+            precip_mm: day.day.totalprecip_mm
+        };
+        
+        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
+        
+        if (dayStatus.issues < minIssues) {
+            minIssues = dayStatus.issues;
+            const date = new Date(day.date);
+            const dateString = date.toLocaleDateString('de-DE', { 
+                weekday: 'short', 
+                day: '2-digit', 
+                month: '2-digit' 
+            });
+            
+            bestDay = {
+                daysFromNow: i,
+                date: dateString,
+                reason: dayStatus.issues === 1 ? 'Akzeptable Bedingungen' : 'Beste verfügbare Option',
+                weather: dayWeather
+            };
+        }
+    }
+    
+    return bestDay;
+    }
+
+    /**
+ * Berechnet Harvest-Status für einen spezifischen Tag
+ */
+calculateDayHarvestStatus(crop, dayWeather) {
+    let issues = 0;
+    let reasons = [];
+    
+    // Temperatur prüfen
+    if (dayWeather.temp_c < crop.optimalTemp.min || dayWeather.temp_c > crop.optimalTemp.max) {
+        issues++;
+        reasons.push('Temperatur nicht optimal');
+    }
+    
+    // Luftfeuchtigkeit prüfen
+    if (dayWeather.humidity > crop.optimalHumidity.max) {
+        issues++;
+        reasons.push('Zu hohe Luftfeuchtigkeit');
+    }
+    
+    // Niederschlag prüfen
+    if (dayWeather.precip_mm > crop.optimalPrecip.max) {
+        issues++;
+        reasons.push('Zu viel Niederschlag');
+    }
+    
+    return { issues, reasons };
+}
 
     /**
      * Standort aktualisieren
