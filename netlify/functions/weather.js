@@ -27,12 +27,53 @@ exports.handler = async (event, context) => {
     }
 
     // Stadt aus Query-Parameter oder Default
-    const city = event.queryStringParameters?.city || 'Berlin';
+    let city = event.queryStringParameters?.city || 'Berlin';
+    
+    // Verbesserte deutsche PLZ-Behandlung mit bekannten Zuordnungen
+    city = city.trim();
+    
+    // Deutsche PLZ-zu-Stadt-Mappings für häufige Postleitzahlen
+    const germanPostalCodes = {
+      '10115': 'Berlin, Germany',
+      '10117': 'Berlin, Germany', 
+      '10178': 'Berlin, Germany',
+      '10179': 'Berlin, Germany',
+      '80331': 'Munich, Germany',
+      '80333': 'Munich, Germany',
+      '20095': 'Hamburg, Germany',
+      '20099': 'Hamburg, Germany',
+      '50667': 'Cologne, Germany',
+      '50668': 'Cologne, Germany',
+      '60311': 'Frankfurt am Main, Germany',
+      '60313': 'Frankfurt am Main, Germany',
+      '70173': 'Stuttgart, Germany',
+      '70174': 'Stuttgart, Germany',
+      '40210': 'Dusseldorf, Germany',
+      '40213': 'Dusseldorf, Germany',
+      '04109': 'Leipzig, Germany',
+      '04103': 'Leipzig, Germany',
+      '01067': 'Dresden, Germany',
+      '01069': 'Dresden, Germany',
+      '30159': 'Hannover, Germany',
+      '30161': 'Hannover, Germany',
+      '90402': 'Nuremberg, Germany',
+      '90403': 'Nuremberg, Germany',
+    };
+    
+    // Prüfe ob es eine bekannte deutsche PLZ ist
+    if (germanPostalCodes[city]) {
+      city = germanPostalCodes[city];
+      console.log(`Deutsche PLZ erkannt: ${event.queryStringParameters?.city} -> ${city}`);
+    } else if (/^\d{5}$/.test(city)) {
+      // Fallback: Füge Germany hinzu für andere 5-stellige Zahlen
+      city = `${city}, Germany`;
+      console.log(`5-stellige Zahl als PLZ behandelt: ${event.queryStringParameters?.city} -> ${city}`);
+    }
     
     // WeatherAPI URL für aktuelle Daten + 7-Tage Forecast
     const API_URL = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(city)}&days=7&aqi=no&alerts=no`;
 
-    console.log(`Lade Wetterdaten für: ${city}`);
+    console.log(`Lade Wetterdaten für: "${event.queryStringParameters?.city}" -> verarbeitet als: "${city}"`);
 
     // API-Aufruf
     const response = await fetch(API_URL);
@@ -48,9 +89,15 @@ exports.handler = async (event, context) => {
     }
 
     const weatherData = await response.json();
+    
+    // Log die empfangenen Standortdaten für Debugging
+    if (weatherData.location) {
+      console.log(`API Antwort - Standort gefunden: ${weatherData.location.name}, ${weatherData.location.region}, ${weatherData.location.country}`);
+    }
 
     // Daten-Struktur validieren
     if (!weatherData.current || !weatherData.location) {
+      console.log('Fehlerhafte API-Antwort:', JSON.stringify(weatherData, null, 2));
       throw new Error('Unvollständige Wetterdaten erhalten');
     }
 
