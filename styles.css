@@ -3,31 +3,46 @@
    Fehlerfreie Version mit allen benötigten Klassen
    ========================================================================== */
 
-/* CSS Custom Properties */
+/* CSS Custom Properties - Modern Dual Theme */
 :root {
-    /* Hauptfarben */
-    --primary-green: #2d5016;
-    --accent-green: #4a7c1e;
-    --light-green: #6b9c2f;
+    /* Modern Agricultural Green Palette */
+    --primary-green: #16a34a;
+    --primary-green-dark: #15803d;
+    --accent-green: #22c55e;
+    --accent-green-light: #4ade80;
+    --sage-green: #84cc16;
     
-    /* Status-Ampelfarben */
-    --success-green: #22c55e;
-    --warning-orange: #f97316;
+    /* High Contrast Status Colors */
+    --success-green: #10b981;
+    --success-green-dark: #059669;
+    --warning-amber: #f59e0b;
+    --warning-amber-dark: #d97706;
     --danger-red: #ef4444;
+    --danger-red-dark: #dc2626;
     
-    /* Neutrale Farben */
-    --bg-light: #f8fafc;
-    --bg-white: #ffffff;
-    --text-dark: #1e293b;
-    --text-gray: #64748b;
-    --border-light: #e2e8f0;
+    /* Modern Neutral System - Light Mode */
+    --surface-primary: #ffffff;
+    --surface-secondary: #f8fafc;
+    --surface-tertiary: #f1f5f9;
+    --surface-elevated: #ffffff;
     
-    /* Schatten */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --text-muted: #94a3b8;
+    
+    --border-subtle: #e2e8f0;
+    --border-default: #cbd5e1;
+    --border-strong: #94a3b8;
+    
+    /* Enhanced Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 8px 25px -6px rgb(0 0 0 / 0.15);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     
-    /* Abstände */
+    /* Spacing System */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
@@ -35,15 +50,19 @@
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
     
-    /* Border Radius */
+    /* Modern Border Radius */
     --radius-sm: 6px;
     --radius: 8px;
+    --radius-md: 10px;
     --radius-lg: 12px;
     --radius-xl: 16px;
+    --radius-2xl: 20px;
     --radius-full: 50%;
     
-    /* Transitions */
-    --transition: all 0.3s ease;
+    /* Smooth Transitions */
+    --transition-fast: all 0.15s ease;
+    --transition: all 0.2s ease;
+    --transition-slow: all 0.3s ease;
 }
 
 /* Reset */
@@ -55,10 +74,11 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
-    color: var(--text-dark);
+    background: linear-gradient(135deg, var(--surface-secondary) 0%, var(--surface-primary) 100%);
+    color: var(--text-primary);
     line-height: 1.6;
     font-size: 16px;
+    transition: var(--transition);
 }
 
 /* Layout */
@@ -122,11 +142,11 @@ body {
 
 /* Card Styles */
 .card {
-    background: var(--bg-white);
+    background: var(--surface-elevated);
     border-radius: var(--radius-xl);
     padding: var(--spacing-lg);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-subtle);
     transition: var(--transition);
     position: relative;
     overflow: hidden;
@@ -146,7 +166,7 @@ body {
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
 }
 
 .card:hover::before {
@@ -215,7 +235,7 @@ body {
 }
 
 .weather-desc {
-    color: var(--text-gray);
+    color: var(--text-secondary);
     font-size: 1.1rem;
     margin-bottom: var(--spacing-md);
     font-weight: 500;
@@ -230,9 +250,9 @@ body {
 }
 
 .weather-detail {
-    background: var(--bg-light);
+    background: var(--surface-tertiary);
     padding: var(--spacing-sm);
-    border-radius: var(--radius);
+    border-radius: var(--radius-md);
     border-left: 3px solid var(--accent-green);
     transition: var(--transition);
 }
@@ -245,10 +265,11 @@ body {
 
 .weather-detail-label {
     font-size: 0.875rem;
-    color: var(--text-gray);
+    color: var(--text-tertiary);
     margin-bottom: var(--spacing-xs);
     text-transform: uppercase;
     letter-spacing: 0.025em;
+    font-weight: 500;
 }
 
 .weather-detail:hover .weather-detail-label {
@@ -257,7 +278,7 @@ body {
 
 .weather-detail-value {
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--text-primary);
     font-size: 1rem;
 }
 
@@ -275,7 +296,7 @@ body {
 .forecast-day {
     text-align: center;
     padding: var(--spacing-md);
-    background: var(--bg-light);
+    background: var(--surface-tertiary);
     border-radius: var(--radius-lg);
     transition: var(--transition);
     cursor: pointer;
@@ -307,7 +328,7 @@ body {
 
 .forecast-rain {
     font-size: 0.75rem;
-    color: var(--text-gray);
+    color: var(--text-tertiary);
 }
 
 .forecast-day:hover .forecast-rain {
@@ -441,7 +462,7 @@ body {
 }
 
 .status-acceptable { 
-    background-color: var(--warning-orange);
+    background-color: var(--warning-amber);
     animation: pulse-orange 2s infinite;
 }
 
@@ -462,10 +483,10 @@ body {
 
 @keyframes pulse-orange {
     0%, 100% { 
-        box-shadow: 0 0 0 2px rgba(255,255,255,0.8), 0 0 8px var(--warning-orange); 
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.8), 0 0 8px var(--warning-amber); 
     }
     50% { 
-        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.3), 0 0 12px var(--warning-orange); 
+        box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.3), 0 0 12px var(--warning-amber); 
     }
 }
 
@@ -488,8 +509,8 @@ body {
 
 /* Harvest Recommendations */
 .harvest-recommendation {
-    background: var(--bg-light);
-    border-radius: var(--radius);
+    background: var(--surface-tertiary);
+    border-radius: var(--radius-lg);
     padding: var(--spacing-md);
     margin-top: var(--spacing-md);
     position: relative;
@@ -521,9 +542,9 @@ body {
 .recommendation-item {
     text-align: center;
     padding: var(--spacing-sm);
-    background: white;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-light);
+    background: var(--surface-elevated);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
     transition: var(--transition);
 }
 
@@ -534,7 +555,7 @@ body {
 
 .recommendation-label {
     font-size: 0.75rem;
-    color: var(--text-gray);
+    color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.025em;
     margin-bottom: var(--spacing-xs);
@@ -543,7 +564,7 @@ body {
 
 .recommendation-value {
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--text-primary);
     margin-top: var(--spacing-xs);
     font-size: 0.9rem;
 }
@@ -552,7 +573,7 @@ body {
 .loading {
     text-align: center;
     padding: var(--spacing-xl);
-    color: var(--text-gray);
+    color: var(--text-tertiary);
     position: relative;
 }
 
@@ -665,13 +686,75 @@ body {
     }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - Modern & Elegant */
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg-light: #1e293b;
-        --bg-white: #334155;
-        --text-dark: #f1f5f9;
-        --text-gray: #cbd5e1;
-        --border-light: #475569;
+        /* Dark Mode Surfaces */
+        --surface-primary: #0f172a;
+        --surface-secondary: #1e293b;
+        --surface-tertiary: #334155;
+        --surface-elevated: #475569;
+        
+        /* Dark Mode Text */
+        --text-primary: #f8fafc;
+        --text-secondary: #e2e8f0;
+        --text-tertiary: #cbd5e1;
+        --text-muted: #94a3b8;
+        
+        /* Dark Mode Borders */
+        --border-subtle: #334155;
+        --border-default: #475569;
+        --border-strong: #64748b;
+        
+        /* Enhanced Green Palette for Dark Mode */
+        --primary-green: #22c55e;
+        --primary-green-dark: #16a34a;
+        --accent-green: #4ade80;
+        --accent-green-light: #86efac;
+        
+        /* High Contrast Status Colors for Dark Mode */
+        --success-green: #22c55e;
+        --success-green-dark: #16a34a;
+        --warning-amber: #fbbf24;
+        --warning-amber-dark: #f59e0b;
+        --danger-red: #f87171;
+        --danger-red-dark: #ef4444;
+        
+        /* Dark Mode Shadows */
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+    }
+    
+    /* Enhanced Dark Mode Card Gradients */
+    .card::before {
+        background: linear-gradient(90deg, var(--accent-green), var(--sage-green));
+    }
+    
+    /* Dark Mode Weather Icons Background */
+    .weather-icon {
+        background: linear-gradient(135deg, var(--accent-green), var(--sage-green));
+    }
+    
+    /* Dark Mode Search Section */
+    .search-section {
+        background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
+    }
+    
+    /* Dark Mode Form Elements */
+    .form-group input,
+    .form-group select {
+        background: var(--surface-elevated);
+        color: var(--text-primary);
+        border: 1px solid var(--border-default);
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        background: var(--surface-primary);
+        border-color: var(--accent-green);
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
     }
 }
