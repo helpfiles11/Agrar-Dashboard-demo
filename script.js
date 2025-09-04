@@ -1,4 +1,4 @@
-// script.js - Agrar-Dashboard JavaScript (Vollständige Version)
+// script.js - Agrar-Dashboard JavaScript (Saubere, fehlerfreie Version)
 
 // Produktdatenbank
 const CROPS_DATABASE = {
@@ -56,24 +56,72 @@ const CROPS_DATABASE = {
         optimalHumidity: { max: 15 },
         optimalTemp: { min: 22, max: 28 },
         optimalPrecip: { max: 2 },
-        comment: 'Ölqualität sinkt bei zu hoger Kornfeuchte'
+        comment: 'Ölqualität sinkt bei zu hoher Kornfeuchte'
     },
     dinkel: {
-    name: 'Dinkel',
-    icon: '🌾',
-    optimalHumidity: { max: 14 },
-    optimalTemp: { min: 20, max: 25 },
-    optimalPrecip: { max: 3 },
-    comment: 'Sehr feuchtigkeitsempfindlich, spelzenfrei dreschen'
+        name: 'Dinkel',
+        icon: '🌾',
+        optimalHumidity: { max: 14 },
+        optimalTemp: { min: 20, max: 25 },
+        optimalPrecip: { max: 3 },
+        comment: 'Sehr feuchtigkeitsempfindlich, spelzenfrei dreschen'
     },
     roggen: {
-    name: 'Roggen',
-    icon: '🌾',
-    optimalHumidity: { max: 16 },
-    optimalTemp: { min: 18, max: 24 },
-    optimalPrecip: { max: 4 },
-    comment: 'Auswuchsgefahr bei Nässe, rechtzeitig ernten'
+        name: 'Roggen',
+        icon: '🌾',
+        optimalHumidity: { max: 16 },
+        optimalTemp: { min: 18, max: 24 },
+        optimalPrecip: { max: 4 },
+        comment: 'Auswuchsgefahr bei Nässe, rechtzeitig ernten'
+    }
+};
+
+/**
+ * Globale Funktionen
+ */
+function updateLocation() {
+    if (window.weatherManager) {
+        window.weatherManager.updateLocation();
+    } else {
+        console.error('WeatherManager nicht verfügbar');
+    }
+}
+
+/**
+ * Debug-Funktionen
+ */
+window.debugWeather = {
+    clearCache: () => {
+        if (window.weatherManager) {
+            window.weatherManager.clearWeatherCache();
+            console.log('Cache gelöscht');
+        }
     },
+    getCurrentData: () => {
+        return window.weatherManager ? window.weatherManager.weatherData : null;
+    },
+    testError: () => {
+        if (window.weatherManager) {
+            window.weatherManager.showError('Test-Fehlermeldung');
+        }
+    },
+    reloadWeather: () => {
+        if (window.weatherManager) {
+            window.weatherManager.loadWeatherData();
+        }
+    },
+    forceProductCards: () => {
+        if (window.weatherManager) {
+            console.log('Force-generiere Produktkarten...');
+            window.weatherManager.generateProductCards();
+        }
+    },
+    showSelectedProducts: () => {
+        if (window.weatherManager) {
+            console.log('Ausgewählte Produkte:', window.weatherManager.selectedProducts);
+            console.log('Verfügbare Crops:', Object.keys(CROPS_DATABASE));
+        }
+    }
 };
 
 /**
@@ -92,6 +140,48 @@ class WeatherManager {
     }
 
     /**
+     * Initialisierung
+     */
+    async init() {
+        try {
+            console.log('Initialisiere Agrar-Dashboard...');
+            this.setupEventListeners();
+            this.updateProductSelection();
+            await this.loadWeatherData();
+            console.log('Dashboard erfolgreich initialisiert');
+        } catch (error) {
+            console.error('Fehler bei der Initialisierung:', error);
+            this.showError('Fehler beim Initialisieren: ' + error.message);
+        }
+    }
+
+    /**
+     * Event Listeners einrichten
+     */
+    setupEventListeners() {
+        const locationInput = document.getElementById('location-input');
+        if (locationInput) {
+            locationInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.updateLocation();
+                }
+            });
+        }
+
+        const productSelect = document.getElementById('product-select');
+        if (productSelect) {
+            productSelect.addEventListener('change', () => {
+                this.updateProductSelection();
+            });
+        }
+
+        setInterval(() => {
+            console.log('Auto-refresh der Wetterdaten...');
+            this.loadWeatherData();
+        }, 600000);
+    }
+
+    /**
      * Standort-Anzeige im Header aktualisieren
      */
     updateLocationDisplay(locationData) {
@@ -99,7 +189,6 @@ class WeatherManager {
         const lastUpdate = document.getElementById('last-update');
         
         if (locationName) {
-            // Formatiere Standort-Information
             let displayName = locationData.name;
             if (locationData.region && locationData.region !== locationData.name) {
                 displayName += `, ${locationData.region}`;
@@ -107,7 +196,6 @@ class WeatherManager {
             if (locationData.country) {
                 displayName += `, ${locationData.country}`;
             }
-            
             locationName.textContent = displayName;
         }
         
@@ -121,59 +209,6 @@ class WeatherManager {
         }
         
         console.log('Standort-Anzeige aktualisiert:', locationData.name);
-    }
-
-    /**
-     * Initialisierung
-     */
-    async init() {
-        try {
-            console.log('Initialisiere Agrar-Dashboard...');
-            this.setupEventListeners();
-            this.updateProductSelection(); // Setzt selectedProducts
-            await this.loadWeatherData(); // Lädt Wetter UND generiert Produktkarten
-            console.log('Dashboard erfolgreich initialisiert');
-        } catch (error) {
-            console.error('Fehler bei der Initialisierung:', error);
-            this.showError('Fehler beim Initialisieren: ' + error.message);
-        }
-    }
-
-    /**
-     * Event Listeners einrichten
-     */
-    setupEventListeners() {
-        // Location Input
-        const locationInput = document.getElementById('location-input');
-        if (locationInput) {
-            locationInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.updateLocation();
-                }
-            });
-        }
-
-        // Product Select
-        const productSelect = document.getElementById('product-select');
-        if (productSelect) {
-            productSelect.addEventListener('change', () => {
-                this.updateProductSelection();
-            });
-        }
-
-        // Auto-Refresh alle 10 Minuten
-        setInterval(() => {
-            console.log('Auto-refresh der Wetterdaten...');
-            this.loadWeatherData();
-        }, 600000);
-        
-        // Initial Produktkarten generieren (falls Wetterdaten bereits geladen)
-        if (this.weatherData) {
-            console.log('Wetterdaten bereits vorhanden, generiere Produktkarten...');
-            this.generateProductCards();
-        } else {
-            console.log('Warte auf Wetterdaten für Produktkarten...');
-        }
     }
 
     /**
@@ -193,7 +228,6 @@ class WeatherManager {
         
         console.log('Produktauswahl:', this.selectedProducts);
         
-        // Sofort Produktkarten generieren wenn Wetterdaten vorhanden
         if (this.weatherData) {
             this.generateProductCards();
         }
@@ -236,10 +270,7 @@ class WeatherManager {
             
             console.log('Wetterdaten geladen für:', data.location.name);
             
-            // Standort-Anzeige aktualisieren
             this.updateLocationDisplay(data.location);
-            
-            // Daten speichern und UI aktualisieren
             this.weatherData = data;
             this.cacheWeatherData(data);
             this.updateWeatherUI(data);
@@ -267,16 +298,16 @@ class WeatherManager {
             this.updateElement('today-precipitation', `${data.current.precip_mm} mm`);
             this.updateElement('today-uv', data.current.uv || '--');
 
+            // Max/Min und Regenwahrscheinlichkeit für heute
             if (data.forecast && data.forecast.forecastday && data.forecast.forecastday.length > 0) {
-            const todayForecast = data.forecast.forecastday[0];
-            this.updateElement('today-minmax', 
-            `${Math.round(todayForecast.day.maxtemp_c)}°C / ${Math.round(todayForecast.day.mintemp_c)}°C`);
-            this.updateElement('today-rain-chance', `${todayForecast.day.daily_chance_of_rain || 0}%`);
+                const todayForecast = data.forecast.forecastday[0];
+                this.updateElement('today-minmax', 
+                    `${Math.round(todayForecast.day.maxtemp_c)}°C / ${Math.round(todayForecast.day.mintemp_c)}°C`);
+                this.updateElement('today-rain-chance', `${todayForecast.day.daily_chance_of_rain || 0}%`);
             } else {
-                    // Fallback wenn keine Forecast-Daten
-                    this.updateElement('today-minmax', `${data.current.temp_c}°C / ${data.current.temp_c}°C`);
-                    this.updateElement('today-rain-chance', '--');
-                    }
+                this.updateElement('today-minmax', `${data.current.temp_c}°C / ${data.current.temp_c}°C`);
+                this.updateElement('today-rain-chance', '--');
+            }
             
             // Icon für heute
             const todayIcon = document.getElementById('today-icon');
@@ -310,13 +341,12 @@ class WeatherManager {
         
         this.updateElement('tomorrow-temp', `${avgTemp}°C`);
         this.updateElement('tomorrow-desc', tomorrowData.day.condition.text);
+        this.updateElement('tomorrow-humidity', `${tomorrowData.day.avghumidity}%`);
+        this.updateElement('tomorrow-wind', `${Math.round(tomorrowData.day.maxwind_kph)} km/h`);
         this.updateElement('tomorrow-minmax', 
             `${Math.round(tomorrowData.day.maxtemp_c)}°C / ${Math.round(tomorrowData.day.mintemp_c)}°C`);
         this.updateElement('tomorrow-rain-chance', `${tomorrowData.day.daily_chance_of_rain || 0}%`);
         this.updateElement('tomorrow-precipitation', `${tomorrowData.day.totalprecip_mm} mm`);
-        this.updateElement('tomorrow-humidity', `${tomorrowData.day.avghumidity}%`);
-        // NEU: Fehlende Werte für morgen:
-        this.updateElement('tomorrow-wind', `${Math.round(tomorrowData.day.maxwind_kph)} km/h`);
         this.updateElement('tomorrow-uv', tomorrowData.day.uv || '--');
         
         const tomorrowIcon = document.getElementById('tomorrow-icon');
@@ -337,10 +367,12 @@ class WeatherManager {
         
         this.updateElement('tomorrow-temp', `${Math.round(estimatedTemp)}°C`);
         this.updateElement('tomorrow-desc', 'Ähnlich wie heute');
+        this.updateElement('tomorrow-humidity', `${Math.min(100, currentData.humidity + 5)}%`);
+        this.updateElement('tomorrow-wind', `${currentData.wind_kph} km/h`);
         this.updateElement('tomorrow-minmax', `${Math.round(estimatedTemp + 3)}°C / ${Math.round(estimatedTemp - 2)}°C`);
         this.updateElement('tomorrow-rain-chance', '20%');
         this.updateElement('tomorrow-precipitation', '0 mm');
-        this.updateElement('tomorrow-humidity', `${Math.min(100, currentData.humidity + 5)}%`);
+        this.updateElement('tomorrow-uv', currentData.uv || '--');
         
         const tomorrowIcon = document.getElementById('tomorrow-icon');
         if (tomorrowIcon) {
@@ -443,19 +475,17 @@ class WeatherManager {
             return;
         }
         
-        // Entferne alte Produktkarten
         const existingCards = container.querySelectorAll('.col-4');
         existingCards.forEach(card => card.remove());
-        console.log(`${existingCards.length} alte Karten entfernt`);
         
         if (!this.weatherData) {
             console.log('Keine Wetterdaten für Produktkarten verfügbar');
             return;
         }
         
-        console.log(`Generiere ${this.selectedProducts.length} Produktkarten für:`, this.selectedProducts);
+        console.log(`Generiere ${this.selectedProducts.length} Produktkarten`);
         
-        this.selectedProducts.forEach((cropKey, index) => {
+        this.selectedProducts.forEach(cropKey => {
             const crop = CROPS_DATABASE[cropKey];
             if (!crop) {
                 console.warn(`Crop nicht gefunden: ${cropKey}`);
@@ -464,8 +494,6 @@ class WeatherManager {
             
             const status = this.calculateHarvestStatus(crop);
             const recommendation = this.getHarvestRecommendation(crop, status);
-            
-            console.log(`Generiere Karte für ${crop.name}:`, status.text);
             
             const cardHTML = `
                 <div class="col-4">
@@ -509,7 +537,7 @@ class WeatherManager {
             container.insertAdjacentHTML('beforeend', cardHTML);
         });
         
-        console.log(`✅ ${this.selectedProducts.length} Produktkarten erfolgreich generiert`);
+        console.log(`${this.selectedProducts.length} Produktkarten erfolgreich generiert`);
     }
 
     /**
@@ -524,7 +552,6 @@ class WeatherManager {
         let issues = 0;
         let reasons = [];
         
-        // Temperatur prüfen
         if (current.temp_c < crop.optimalTemp.min) {
             issues++;
             reasons.push(`Zu kalt (${current.temp_c}°C)`);
@@ -533,19 +560,16 @@ class WeatherManager {
             reasons.push(`Zu heiß (${current.temp_c}°C)`);
         }
         
-        // Luftfeuchtigkeit prüfen
         if (current.humidity > crop.optimalHumidity.max) {
             issues++;
             reasons.push(`Zu hohe Luftfeuchtigkeit (${current.humidity}%)`);
         }
         
-        // Niederschlag prüfen
         if (current.precip_mm > crop.optimalPrecip.max) {
             issues++;
             reasons.push(`Zu viel Niederschlag (${current.precip_mm}mm)`);
         }
         
-        // Status bestimmen
         if (issues === 0) {
             return { class: 'status-ready', text: 'Erntebereit', reasons };
         } else if (issues === 1) {
@@ -556,248 +580,126 @@ class WeatherManager {
     }
 
     /**
+     * Berechnet Harvest-Status für einen spezifischen Tag
+     */
+    calculateDayHarvestStatus(crop, dayWeather) {
+        let issues = 0;
+        let reasons = [];
+        
+        if (dayWeather.temp_c < crop.optimalTemp.min || dayWeather.temp_c > crop.optimalTemp.max) {
+            issues++;
+            reasons.push('Temperatur nicht optimal');
+        }
+        
+        if (dayWeather.humidity > crop.optimalHumidity.max) {
+            issues++;
+            reasons.push('Zu hohe Luftfeuchtigkeit');
+        }
+        
+        if (dayWeather.precip_mm > crop.optimalPrecip.max) {
+            issues++;
+            reasons.push('Zu viel Niederschlag');
+        }
+        
+        return { issues, reasons };
+    }
+
+    /**
+     * Findet den optimalen Erntezeitpunkt in der 7-Tage-Vorhersage
+     */
+    findOptimalHarvestDay(crop) {
+        if (!this.weatherData || !this.weatherData.forecast || !this.weatherData.forecast.forecastday) {
+            return null;
+        }
+        
+        const forecastDays = this.weatherData.forecast.forecastday;
+        
+        // Prüfe jeden Tag (außer heute - Index 0)
+        for (let i = 1; i < forecastDays.length; i++) {
+            const day = forecastDays[i];
+            const dayWeather = {
+                temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
+                humidity: day.day.avghumidity,
+                precip_mm: day.day.totalprecip_mm
+            };
+            
+            const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
+            
+            if (dayStatus.issues === 0) {
+                const date = new Date(day.date);
+                const dateString = date.toLocaleDateString('de-DE', { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: '2-digit' 
+                });
+                
+                return {
+                    daysFromNow: i,
+                    date: dateString,
+                    reason: 'Optimale Bedingungen erwartet',
+                    weather: dayWeather
+                };
+            }
+        }
+        
+        // Falls kein perfekter Tag gefunden, finde den besten verfügbaren
+        let bestDay = null;
+        let minIssues = Infinity;
+        
+        for (let i = 1; i < forecastDays.length; i++) {
+            const day = forecastDays[i];
+            const dayWeather = {
+                temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
+                humidity: day.day.avghumidity,
+                precip_mm: day.day.totalprecip_mm
+            };
+            
+            const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
+            
+            if (dayStatus.issues < minIssues) {
+                minIssues = dayStatus.issues;
+                const date = new Date(day.date);
+                const dateString = date.toLocaleDateString('de-DE', { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: '2-digit' 
+                });
+                
+                bestDay = {
+                    daysFromNow: i,
+                    date: dateString,
+                    reason: dayStatus.issues === 1 ? 'Akzeptable Bedingungen' : 'Beste verfügbare Option',
+                    weather: dayWeather
+                };
+            }
+        }
+        
+        return bestDay;
+    }
+
+    /**
      * Ernteempfehlung generieren
      */
     getHarvestRecommendation(crop, status) {
-        const recommendations = {
-            'status-ready': {
+        const optimalDay = this.findOptimalHarvestDay(crop);
+        
+        if (status.class === 'status-ready') {
+            return {
                 when: 'Heute optimal',
                 reason: 'Alle Bedingungen erfüllt'
-            },
-            'status-acceptable': {
-                when: 'Heute möglich',
-                reason: status.reasons.length > 0 ? status.reasons[0] : 'Bedingungen akzeptabel'
-            },
-            'status-problematic': {
+            };
+        } else if (optimalDay) {
+            return {
+                when: `In ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''}`,
+                reason: `${optimalDay.date} - ${optimalDay.reason}`
+            };
+        } else {
+            return {
                 when: 'Warten empfohlen',
                 reason: status.reasons.slice(0, 2).join('; ')
-            }
-        };
-        
-        return recommendations[status.class] || {
-            when: 'Unbekannt',
-            reason: 'Daten nicht verfügbar'
-        };
-        // Prüfe 7-Tage-Vorhersage für optimalen Erntezeitpunkt
-        const optimalDay = this.findOptimalHarvestDay(crop);
-    
-        if (status.class === 'status-ready') {
-        return {
-            when: 'Heute optimal',
-            reason: 'Alle Bedingungen erfüllt',
-            futureDay: null
-        };
-    }    else if (optimalDay) {
-        return {
-            when: `In ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''}`,
-            reason: `${optimalDay.date} - ${optimalDay.reason}`,
-            futureDay: optimalDay
-        };
-        } else {
-        return {
-            when: 'Warten empfohlen',
-            reason: status.reasons.slice(0, 2).join('; '),
-            futureDay: null
-        };
-    };
-    // Prüfe 7-Tage-Vorhersage für optimalen Erntezeitpunkt
-    const optimalDay = this.findOptimalHarvestDay(crop);
-    
-    if (status.class === 'status-ready') {
-        return {
-            when: 'Heute optimal',
-            reason: 'Alle Bedingungen erfüllt',
-            futureDay: null
-        };
-    } else if (optimalDay) {
-        return {
-            when: `In ${optimalDay.daysFromNow} Tag${optimalDay.daysFromNow > 1 ? 'en' : ''}`,
-            reason: `${optimalDay.date} - ${optimalDay.reason}`,
-            futureDay: optimalDay
-        };
-    } else {
-        return {
-            when: 'Warten empfohlen',
-            reason: status.reasons.slice(0, 2).join('; '),
-            futureDay: null
-        };
-    }
-    };
-    /**
- * Findet den optimalen Erntezeitpunkt in der 7-Tage-Vorhersage
- */
-findOptimalHarvestDay(crop) {
-    if (!this.weatherData || !this.weatherData.forecast || !this.weatherData.forecast.forecastday) {
-        return null;
-    }
-    
-    const forecastDays = this.weatherData.forecast.forecastday;
-    
-    // Prüfe jeden Tag (außer heute - Index 0)
-    for (let i = 1; i < forecastDays.length; i++) {
-        const day = forecastDays[i];
-        const dayWeather = {
-            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
-            humidity: day.day.avghumidity,
-            precip_mm: day.day.totalprecip_mm
-        };
-        
-        // Prüfe ob dieser Tag optimal ist
-        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
-        
-        if (dayStatus.issues === 0) {
-            const date = new Date(day.date);
-            const dateString = date.toLocaleDateString('de-DE', { 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: '2-digit' 
-            });
-            
-            return {
-                daysFromNow: i,
-                date: dateString,
-                reason: 'Optimale Bedingungen erwartet',
-                weather: dayWeather
             };
         }
     }
-    
-    // Falls kein perfekter Tag gefunden, finde den besten verfügbaren
-    let bestDay = null;
-    let minIssues = Infinity;
-    
-    for (let i = 1; i < forecastDays.length; i++) {
-        const day = forecastDays[i];
-        const dayWeather = {
-            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
-            humidity: day.day.avghumidity,
-            precip_mm: day.day.totalprecip_mm
-        };
-        
-        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
-        
-        if (dayStatus.issues < minIssues) {
-            minIssues = dayStatus.issues;
-            const date = new Date(day.date);
-            const dateString = date.toLocaleDateString('de-DE', { 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: '2-digit' 
-            });
-            
-            bestDay = {
-                daysFromNow: i,
-                date: dateString,
-                reason: dayStatus.issues === 1 ? 'Akzeptable Bedingungen' : 'Beste verfügbare Option',
-                weather: dayWeather
-            };
-        }
-    }
-    
-    return bestDay;
-}
-
-    /**
- * Findet den optimalen Erntezeitpunkt in der 7-Tage-Vorhersage
- */
-findOptimalHarvestDay(crop) {
-    if (!this.weatherData || !this.weatherData.forecast || !this.weatherData.forecast.forecastday) {
-        return null;
-    }
-    
-    const forecastDays = this.weatherData.forecast.forecastday;
-    
-    // Prüfe jeden Tag (außer heute - Index 0)
-    for (let i = 1; i < forecastDays.length; i++) {
-        const day = forecastDays[i];
-        const dayWeather = {
-            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
-            humidity: day.day.avghumidity,
-            precip_mm: day.day.totalprecip_mm
-        };
-        
-        // Prüfe ob dieser Tag optimal ist
-        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
-        
-        if (dayStatus.issues === 0) {
-            const date = new Date(day.date);
-            const dateString = date.toLocaleDateString('de-DE', { 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: '2-digit' 
-            });
-            
-            return {
-                daysFromNow: i,
-                date: dateString,
-                reason: 'Optimale Bedingungen erwartet',
-                weather: dayWeather
-            };
-        }
-    }
-    
-    // Falls kein perfekter Tag gefunden, finde den besten verfügbaren
-    let bestDay = null;
-    let minIssues = Infinity;
-    
-    for (let i = 1; i < forecastDays.length; i++) {
-        const day = forecastDays[i];
-        const dayWeather = {
-            temp_c: (day.day.maxtemp_c + day.day.mintemp_c) / 2,
-            humidity: day.day.avghumidity,
-            precip_mm: day.day.totalprecip_mm
-        };
-        
-        const dayStatus = this.calculateDayHarvestStatus(crop, dayWeather);
-        
-        if (dayStatus.issues < minIssues) {
-            minIssues = dayStatus.issues;
-            const date = new Date(day.date);
-            const dateString = date.toLocaleDateString('de-DE', { 
-                weekday: 'short', 
-                day: '2-digit', 
-                month: '2-digit' 
-            });
-            
-            bestDay = {
-                daysFromNow: i,
-                date: dateString,
-                reason: dayStatus.issues === 1 ? 'Akzeptable Bedingungen' : 'Beste verfügbare Option',
-                weather: dayWeather
-            };
-        }
-    }
-    
-    return bestDay;
-    }
-
-    /**
- * Berechnet Harvest-Status für einen spezifischen Tag
- */
-calculateDayHarvestStatus(crop, dayWeather) {
-    let issues = 0;
-    let reasons = [];
-    
-    // Temperatur prüfen
-    if (dayWeather.temp_c < crop.optimalTemp.min || dayWeather.temp_c > crop.optimalTemp.max) {
-        issues++;
-        reasons.push('Temperatur nicht optimal');
-    }
-    
-    // Luftfeuchtigkeit prüfen
-    if (dayWeather.humidity > crop.optimalHumidity.max) {
-        issues++;
-        reasons.push('Zu hohe Luftfeuchtigkeit');
-    }
-    
-    // Niederschlag prüfen
-    if (dayWeather.precip_mm > crop.optimalPrecip.max) {
-        issues++;
-        reasons.push('Zu viel Niederschlag');
-    }
-    
-    return { issues, reasons };
-}
 
     /**
      * Standort aktualisieren
@@ -935,7 +837,6 @@ calculateDayHarvestStatus(crop, dayWeather) {
                     aria-label="Fehlermeldung schließen">×</button>
         `;
         
-        // Auto-remove nach 10 Sekunden
         setTimeout(() => {
             if (errorElement && errorElement.parentElement) {
                 errorElement.remove();
@@ -945,83 +846,7 @@ calculateDayHarvestStatus(crop, dayWeather) {
 }
 
 /**
- * Globale Funktionen
- */
-function updateLocation() {
-    if (window.weatherManager) {
-        window.weatherManager.updateLocation();
-    } else {
-        console.error('WeatherManager nicht verfügbar');
-    }
-}
-
-/**
- * Debug-Funktionen (für Entwicklung)
- */
-window.debugWeather = {
-    clearCache: () => {
-        if (window.weatherManager) {
-            window.weatherManager.clearWeatherCache();
-            console.log('Cache gelöscht');
-        }
-    },
-    getCurrentData: () => {
-        return window.weatherManager ? window.weatherManager.weatherData : null;
-    },
-    testError: () => {
-        if (window.weatherManager) {
-            window.weatherManager.showError('Test-Fehlermeldung');
-        }
-    },
-    reloadWeather: () => {
-        if (window.weatherManager) {
-            window.weatherManager.loadWeatherData();
-        }
-    },
-    forceProductCards: () => {
-        if (window.weatherManager) {
-            console.log('Force-generiere Produktkarten...');
-            window.weatherManager.generateProductCards();
-        }
-    },
-    showSelectedProducts: () => {
-        if (window.weatherManager) {
-            console.log('Ausgewählte Produkte:', window.weatherManager.selectedProducts);
-            console.log('Verfügbare Crops:', Object.keys(CROPS_DATABASE));
-        }
-    }
-};
-
-/**
- * Berechnet Harvest-Status für einen spezifischen Tag
- */
-calculateDayHarvestStatus(crop, dayWeather) {
-    let issues = 0;
-    let reasons = [];
-    
-    // Temperatur prüfen
-    if (dayWeather.temp_c < crop.optimalTemp.min || dayWeather.temp_c > crop.optimalTemp.max) {
-        issues++;
-        reasons.push('Temperatur nicht optimal');
-    }
-    
-    // Luftfeuchtigkeit prüfen
-    if (dayWeather.humidity > crop.optimalHumidity.max) {
-        issues++;
-        reasons.push('Zu hohe Luftfeuchtigkeit');
-    }
-    
-    // Niederschlag prüfen
-    if (dayWeather.precip_mm > crop.optimalPrecip.max) {
-        issues++;
-        reasons.push('Zu viel Niederschlag');
-    }
-    
-    return { issues, reasons };
-}
-
-/**
- * Initialisierung beim DOM-Load
+ * Initialisierung
  */
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM geladen, starte WeatherManager...');
@@ -1032,7 +857,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
         console.error('Kritischer Fehler beim Start:', error);
         
-        // Fallback Error Display
         const container = document.querySelector('.container');
         if (container) {
             const errorDiv = document.createElement('div');
